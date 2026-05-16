@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { listInstructors } from "../api/admin";
+import { api } from "../api/client";
+import type { InstructorSummary, Page } from "../api/types";
 import { TEACHERS_MOCK, type TeacherRow, type TeacherStatus } from "../data/teachersMock";
 
 function inferStatus(_idx: number): TeacherStatus {
@@ -8,9 +9,15 @@ function inferStatus(_idx: number): TeacherStatus {
   return ring[_idx % ring.length];
 }
 
-function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+// Public catalog list of instructors — read-only for an instructor account
+// (admin-only management endpoints would return 403).
+function listPublicInstructors(params: { page?: number; size?: number; search?: string } = {}) {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.size) q.set("size", String(params.size));
+  if (params.search) q.set("search", params.search);
+  const qs = q.toString();
+  return api<Page<InstructorSummary>>(`/instructors${qs ? `?${qs}` : ""}`);
 }
 
 export function useTeachers(page = 1, size = 20) {
@@ -24,7 +31,7 @@ export function useTeachers(page = 1, size = 20) {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    listInstructors({ page, size })
+    listPublicInstructors({ page, size })
       .then((res) => {
         if (!mounted) return;
         if (!res.items.length) {
@@ -37,7 +44,7 @@ export function useTeachers(page = 1, size = 20) {
           userId: `#${it.slug.slice(0, 6).toUpperCase()}`,
           avatar: it.avatar_url ?? `https://i.pravatar.cc/80?img=${20 + (i % 50)}`,
           course: it.courses_count,
-          joinDate: fmtDate(it.created_at),
+          joinDate: "—",
           earning: "$0.00",
           balance: "$0.00",
           status: inferStatus(i),

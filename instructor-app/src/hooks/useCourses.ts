@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { listCourses } from "../api/courses";
+import { useAuth } from "../auth/AuthContext";
 import { COURSES_MOCK, type CourseRow, type CourseStatus } from "../data/coursesMock";
 
 function fmtPrice(cents: number, currency = "USD"): string {
@@ -9,7 +10,7 @@ function fmtPrice(cents: number, currency = "USD"): string {
 function fmtDuration(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
-  return `${h}:${m} Hours`;
+  return `${h}:${m.toString().padStart(2, "0")} Hours`;
 }
 
 function mapStatus(s: string): CourseStatus {
@@ -20,6 +21,7 @@ function mapStatus(s: string): CourseStatus {
 }
 
 export function useCourses(page = 1, size = 20) {
+  const { user } = useAuth();
   const [rows, setRows] = useState<CourseRow[]>(COURSES_MOCK);
   const [total, setTotal] = useState(COURSES_MOCK.length);
   const [loading, setLoading] = useState(true);
@@ -37,17 +39,17 @@ export function useCourses(page = 1, size = 20) {
           setLoading(false);
           return;
         }
+        const myName = user?.full_name ?? "—";
+        const myAvatar = user?.avatar_url ?? `https://i.pravatar.cc/40?u=${user?.id ?? "me"}`;
         const mapped: CourseRow[] = res.items.map((c, i) => ({
           id: c.id,
           title: c.title,
           code: `#${c.slug.slice(0, 7).toUpperCase()}`,
           thumb: c.thumbnail_url ?? `https://picsum.photos/seed/${c.id}/64/64`,
-          instructor: c.instructor
-            ? {
-                name: c.instructor.name,
-                avatar: c.instructor.avatar_url ?? `https://i.pravatar.cc/40?img=${20 + (i % 50)}`,
-              }
-            : { name: "—", avatar: `https://i.pravatar.cc/40?img=${20 + (i % 50)}` },
+          instructor: {
+            name: myName,
+            avatar: myAvatar || `https://i.pravatar.cc/40?img=${20 + (i % 50)}`,
+          },
           sale: c.enrollments_count,
           price: fmtPrice(c.discount_price_cents ?? c.price_cents, c.currency),
           lessons: c.lectures_count,
@@ -62,7 +64,7 @@ export function useCourses(page = 1, size = 20) {
     return () => {
       mounted = false;
     };
-  }, [page, size, reloadKey]);
+  }, [page, size, reloadKey, user?.full_name, user?.avatar_url, user?.id]);
 
   return { rows, total, loading, reload };
 }

@@ -102,11 +102,15 @@ function AppRoutes() {
 }
 
 function AuthGate({ mode, children }: { mode: "anon" | "authed"; children: React.ReactNode }) {
-  const { status } = useAuth();
+  const { status, needsPhoneVerify } = useAuth();
   if (status === "loading") {
     return <div className="grid min-h-screen place-items-center text-slate-600">Loading…</div>;
   }
   if (mode === "authed" && status !== "authed") return <Navigate to="/sign-in" replace />;
   if (mode === "anon" && status === "authed") return <Navigate to="/" replace />;
+  // Phone-verify gate: any authed route blocks on this; the verify page itself
+  // is reachable via its own route (mounted outside this gate) so the user can
+  // complete the flow.
+  if (mode === "authed" && needsPhoneVerify) return <Navigate to="/verify-code" replace />;
   return <>{children}</>;
 }

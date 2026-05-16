@@ -50,7 +50,11 @@ export type InstructorCourseRead = {
   id: string;
   slug: string;
   title: string;
+  subtitle: string | null;
+  description: string | null;
   thumbnail_url: string | null;
+  has_preview_video: boolean;
+  preview_playback_url: string | null;
   category_id: string;
   instructor_id: string;
   level: CourseLevel;
@@ -60,7 +64,17 @@ export type InstructorCourseRead = {
   price_cents: number;
   discount_price_cents: number | null;
   currency: string;
+  learning_outcomes: string[] | null;
+  requirements: string[] | null;
+  target_audience: string[] | null;
+  tags: string[] | null;
   status: PublishStatus;
+  published_at: string | null;
+  enrollments_count: number;
+  rating_avg: number;
+  ratings_count: number;
+  created_at: string;
+  updated_at: string;
 };
 
 export type CourseAnalytics = {
@@ -291,3 +305,211 @@ export type AdminEnrollmentRead = {
     status: PublishStatus;
   } | null;
 };
+
+// ============= Instructor (self) =============
+
+export type InstructorProfileRead = {
+  id: string;
+  user_id: string;
+  slug: string;
+  name: string;
+  title: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  expertise: string[] | null;
+  linkedin_url: string | null;
+  twitter_url: string | null;
+  website_url: string | null;
+  rating_avg: number | string;
+  students_count: number;
+  courses_count: number;
+  created_at: string;
+};
+
+export type InstructorProfileUpdate = {
+  name?: string;
+  title?: string;
+  bio?: string;
+  expertise?: string[];
+  linkedin_url?: string;
+  twitter_url?: string;
+  website_url?: string;
+};
+
+export type UploadResponse = {
+  url: string;
+  size_bytes: number;
+};
+
+// ============= Curriculum admin (instructor view) =============
+
+export type HlsStatus = "pending" | "ready" | "failed" | null;
+
+export type LessonAdminRead = {
+  id: string;
+  section_id: string;
+  title: string;
+  description: string | null;
+  type: LessonType;
+  article_content: string | null;
+  has_video: boolean;
+  playback_url: string | null;
+  hls_status: HlsStatus;
+  resource_url: string | null;
+  duration_seconds: number;
+  order: number;
+  is_free_preview: boolean;
+};
+
+export type SectionAdminRead = {
+  id: string;
+  course_id: string;
+  title: string;
+  order: number;
+};
+
+export type SectionCreate = {
+  title: string;
+  order?: number;
+};
+
+export type SectionUpdate = Partial<SectionCreate>;
+
+export type LessonCreate = {
+  title: string;
+  description?: string;
+  type?: LessonType;
+  article_content?: string;
+  duration_seconds?: number;
+  order?: number;
+  is_free_preview?: boolean;
+};
+
+export type LessonUpdate = Partial<LessonCreate>;
+
+export type ReorderPayload = {
+  items: { id: string; order: number }[];
+};
+
+// ============= Students of my course (instructor) =============
+
+export type EnrolledStudentRead = {
+  user_id: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+  enrolled_at: string;
+  progress_percent: number;
+  completed_at: string | null;
+  last_accessed_at: string | null;
+};
+
+// ============= Instructor course write payloads =============
+
+export type InstructorCourseCreate = {
+  title: string;
+  subtitle?: string;
+  description?: string;
+  category_id: string;
+  level?: CourseLevel;
+  language?: string;
+  price_cents?: number;
+  discount_price_cents?: number;
+  currency?: string;
+  learning_outcomes?: string[];
+  requirements?: string[];
+  target_audience?: string[];
+  tags?: string[];
+};
+
+export type InstructorCourseUpdate = Partial<InstructorCourseCreate>;
+
+// ============= Playback =============
+
+export type LessonPlaybackResponse = {
+  lesson_id: string;
+  expires_at: string;
+  hls_url: string | null;
+  hls_status: "pending" | "ready" | "failed";
+  total_segments: number;
+  segment_seconds: number;
+  drm: { provider: string; license_url: string } | null;
+};
+
+export type CoursePreviewPlayback = {
+  course_id: string;
+  expires_at: string;
+  stream_url: string;
+};
+
+// ============= Assessments (instructor) =============
+
+export type QuestionType = "single_choice" | "multi_choice" | "true_false" | "short_answer";
+export type AssessmentStatus = "draft" | "published" | "archived";
+
+export type QuestionOptionRead = {
+  id: string;
+  text: string;
+  image_url: string | null;
+  is_correct: boolean;
+  order: number;
+};
+
+export type QuestionInstructorRead = {
+  id: string;
+  assessment_id: string;
+  type: QuestionType;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  order: number;
+  points: number;
+  is_required: boolean;
+  options: QuestionOptionRead[];
+};
+
+export type AssessmentInstructorRead = {
+  id: string;
+  course_id: string;
+  section_id: string | null;
+  title: string;
+  description: string | null;
+  instructions: string | null;
+  time_limit_minutes: number | null;
+  pass_percent: number;
+  max_attempts: number | null;
+  shuffle_questions: boolean;
+  show_correct_answers: boolean;
+  is_section_quiz: boolean;
+  status: AssessmentStatus;
+  questions: QuestionInstructorRead[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type AssessmentCreate = {
+  title: string;
+  description?: string;
+  instructions?: string;
+  time_limit_minutes?: number;
+  pass_percent?: number;
+  max_attempts?: number;
+  shuffle_questions?: boolean;
+  show_correct_answers?: boolean;
+  is_section_quiz?: boolean;
+  section_id?: string;
+};
+
+export type AssessmentUpdate = Partial<AssessmentCreate> & { status?: AssessmentStatus };
+
+export type QuestionCreate = {
+  type: QuestionType;
+  title: string;
+  description?: string;
+  order?: number;
+  points?: number;
+  is_required?: boolean;
+  options?: { text: string; is_correct?: boolean; order?: number }[];
+};
+
+export type QuestionUpdate = Partial<Omit<QuestionCreate, "options">>;

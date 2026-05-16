@@ -1,69 +1,62 @@
+// Instructor-scoped course operations.
+// (Pre-integration this module hit /admin/courses, which is admin-only and 403s for
+// an instructor account. Backend exposes /instructor/courses/* for the same flow,
+// so we forward to the instructor module to keep the older imports working.)
 import { api } from "./client";
+import {
+  createMyCourse,
+  deleteMyCourse,
+  getMyCourse,
+  listMyCourses,
+  publishMyCourse,
+  unpublishMyCourse,
+  updateMyCourse,
+} from "./instructor";
 import type {
-  AdminCourseRead,
-  AdminCourseUpdate,
   CategoryRead,
   CurriculumRead,
-  InstructorCourseRead,
-  Page,
+  InstructorCourseCreate,
+  InstructorCourseUpdate,
+  PublishStatus,
 } from "./types";
 
 export function listCourses(params: {
   page?: number;
   size?: number;
   search?: string;
-  status?: string;
+  status?: PublishStatus | string;
   category_id?: string;
 } = {}) {
-  const q = new URLSearchParams();
-  if (params.page) q.set("page", String(params.page));
-  if (params.size) q.set("size", String(params.size));
-  if (params.search) q.set("search", params.search);
-  if (params.status) q.set("status", params.status);
-  if (params.category_id) q.set("category_id", params.category_id);
-  const qs = q.toString();
-  return api<Page<AdminCourseRead>>(`/admin/courses${qs ? `?${qs}` : ""}`);
+  return listMyCourses({
+    page: params.page,
+    size: params.size,
+    status: params.status,
+    search: params.search,
+  });
 }
 
 export function getCourse(id: string) {
-  return api<AdminCourseRead>(`/admin/courses/${id}`);
+  return getMyCourse(id);
 }
 
-export function updateCourse(id: string, body: AdminCourseUpdate) {
-  return api<AdminCourseRead>(`/admin/courses/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
+export function updateCourse(id: string, body: InstructorCourseUpdate) {
+  return updateMyCourse(id, body);
 }
 
 export function deleteCourse(id: string) {
-  return api<void>(`/admin/courses/${id}`, { method: "DELETE" });
+  return deleteMyCourse(id);
 }
 
 export function publishCourse(id: string) {
-  return api<AdminCourseRead>(`/admin/courses/${id}/publish`, { method: "POST" });
+  return publishMyCourse(id);
 }
 
 export function unpublishCourse(id: string) {
-  return api<AdminCourseRead>(`/admin/courses/${id}/unpublish`, { method: "POST" });
+  return unpublishMyCourse(id);
 }
 
-// Create flows through instructor endpoint (no admin POST exists)
-export function createCourseAsInstructor(body: {
-  title: string;
-  subtitle?: string;
-  description?: string;
-  category_id: string;
-  level?: string;
-  language?: string;
-  price_cents?: number;
-  discount_price_cents?: number;
-  currency?: string;
-}) {
-  return api<InstructorCourseRead>(`/instructor/courses`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+export function createCourseAsInstructor(body: InstructorCourseCreate) {
+  return createMyCourse(body);
 }
 
 export function getCurriculum(slug: string) {

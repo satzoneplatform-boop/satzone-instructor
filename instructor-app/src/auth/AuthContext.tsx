@@ -34,9 +34,11 @@ type AuthState = {
   user: UserMe | null;
   status: "loading" | "anon" | "authed";
   isDemo: boolean;
+  needsPhoneVerify: boolean;
   login: (email: string, password: string) => Promise<UserMe>;
   loginDemo: () => Promise<UserMe>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 
 const Ctx = createContext<AuthState | null>(null);
@@ -94,11 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const needsPhoneVerify = !!user && !isDemo && !user.is_phone_verified;
+
   const value = useMemo<AuthState>(
     () => ({
       user,
       status,
       isDemo,
+      needsPhoneVerify,
       async login(email, password) {
         const me = await apiLogin(email, password);
         setUser(me);
@@ -124,8 +129,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus("anon");
         setIsDemo(false);
       },
+      async refreshUser() {
+        if (isDemo) return;
+        try {
+          const me = await getMe();
+          setUser(me);
+        } catch {
+          /* ignore */
+        }
+      },
     }),
-    [user, status, isDemo]
+    [user, status, isDemo, needsPhoneVerify]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

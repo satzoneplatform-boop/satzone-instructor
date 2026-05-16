@@ -4,11 +4,22 @@ import type {
   NotificationPreferenceUpdate,
   OnboardingRead,
   OnboardingUpdate,
+  UploadResponse,
   UserMe,
 } from "./types";
 
 export function updateMe(body: { full_name?: string; avatar_url?: string }) {
   return api<UserMe>(`/me`, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+export function uploadMyAvatar(file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return api<UploadResponse>(`/me/avatar`, { method: "POST", body: fd });
+}
+
+export function deleteMyAvatar() {
+  return api<void>(`/me/avatar`, { method: "DELETE" });
 }
 
 export function changePassword(body: { current_password: string; new_password: string }) {
