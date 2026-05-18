@@ -4,10 +4,8 @@ import {
   Users,
   BookOpen,
   BookMarked,
-  Award,
   MessageSquare,
   ClipboardList,
-  Calculator,
   Video,
   Settings,
   Send,
@@ -26,10 +24,8 @@ const MENU = [
   { icon: Users, label: "Students", to: "/students", match: (p: string) => p.startsWith("/students") },
   { icon: BookOpen, label: "Course", to: "/courses", match: (p: string) => p.startsWith("/courses") },
   { icon: BookMarked, label: "Resource", to: "/resource" },
-  { icon: Award, label: "Certificate", to: "/certificate" },
   { icon: MessageSquare, label: "Chat", to: "/chat" },
   { icon: ClipboardList, label: "Transaction", to: "/transactions" },
-  { icon: Calculator, label: "App Pages", to: "/pages" },
   { icon: Video, label: "Authentication", to: "/authentication" },
 ];
 

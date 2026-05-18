@@ -2,8 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/Toast";
-import { DemoBanner } from "./components/DemoBanner";
-
 // Auth flow
 import { SignInPage } from "./pages/SignInPage";
 import { SignUpPage } from "./pages/SignUpPage";
@@ -38,7 +36,6 @@ export default function App() {
       <ToastProvider>
         <AuthProvider>
           <BrowserRouter>
-            <DemoBanner />
             <AppRoutes />
           </BrowserRouter>
         </AuthProvider>
@@ -86,9 +83,7 @@ function AppRoutes() {
 
       {/* Stubs for sidebar items that don't have detailed designs yet */}
       <Route path="/resource" element={<AuthGate mode="authed"><PlaceholderPage title="Resource" /></AuthGate>} />
-      <Route path="/certificate" element={<AuthGate mode="authed"><PlaceholderPage title="Certificates" /></AuthGate>} />
       <Route path="/chat" element={<AuthGate mode="authed"><PlaceholderPage title="Chat" /></AuthGate>} />
-      <Route path="/pages" element={<AuthGate mode="authed"><PlaceholderPage title="App Pages" /></AuthGate>} />
       <Route path="/authentication" element={<AuthGate mode="authed"><PlaceholderPage title="Authentication" description="The auth screens live under /sign-in, /sign-up, /forgot-password, /reset-password, /verify-code." /></AuthGate>} />
       <Route path="/support" element={<AuthGate mode="authed"><PlaceholderPage title="Support" /></AuthGate>} />
 
