@@ -1,11 +1,13 @@
 import { Search, SlidersHorizontal, Bell, MessageSquare, Settings, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { useAuth } from "../auth/AuthContext";
 
 export function TopNav() {
   const { user } = useAuth();
+  const nav = useNavigate();
   const [openDropdown, setOpenDropdown] = useState<"notif" | "profile" | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -36,24 +38,27 @@ export function TopNav() {
         <div className="flex items-center gap-3.5">
           <button
             type="button"
-            onClick={() =>
-              setOpenDropdown((v) => (v === "notif" ? null : "notif"))
-            }
+            onClick={() => setOpenDropdown((v) => (v === "notif" ? null : "notif"))}
             className="relative grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-violet-200 bg-white"
+            aria-label="Notifications"
           >
             <Bell size={20} className="text-secondary" />
           </button>
 
           <button
             type="button"
-            className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-violet-200 bg-white"
+            onClick={() => nav("/chat")}
+            className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-violet-200 bg-white transition hover:bg-violet-50"
+            aria-label="Chat"
           >
             <MessageSquare size={20} className="text-secondary" />
           </button>
 
           <button
             type="button"
-            className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-violet-200 bg-white"
+            onClick={() => nav("/settings")}
+            className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-violet-200 bg-white transition hover:bg-violet-50"
+            aria-label="Settings"
           >
             <Settings size={20} className="text-secondary" />
           </button>
@@ -63,10 +68,9 @@ export function TopNav() {
 
         <button
           type="button"
-          onClick={() =>
-            setOpenDropdown((v) => (v === "profile" ? null : "profile"))
-          }
+          onClick={() => setOpenDropdown((v) => (v === "profile" ? null : "profile"))}
           className="flex items-center gap-1.5"
+          aria-label="Profile menu"
         >
           <img
             src={user?.avatar_url ?? "https://i.pravatar.cc/80?img=8"}
@@ -76,12 +80,10 @@ export function TopNav() {
           <ChevronDown size={20} className="text-secondary" />
         </button>
 
-        {/* Dropdowns positioned absolutely below the relevant trigger */}
+        {/* Dropdowns */}
         <div className="absolute right-12 top-[88px] z-30">
           {openDropdown === "notif" && (
-            <NotificationDropdown
-              onSeeAll={() => setOpenDropdown(null)}
-            />
+            <NotificationDropdown onSeeAll={() => setOpenDropdown(null)} />
           )}
           {openDropdown === "profile" && <ProfileDropdown />}
         </div>

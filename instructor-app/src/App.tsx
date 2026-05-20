@@ -4,7 +4,6 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/Toast";
 // Auth flow
 import { SignInPage } from "./pages/SignInPage";
-import { SignUpPage } from "./pages/SignUpPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { VerifyCodePage } from "./pages/VerifyCodePage";
@@ -29,6 +28,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 // Status pages
 import { GenericErrorPage, MaintenancePage, NotFoundPage } from "./pages/ErrorPages";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { ContactsPage } from "./pages/ContactsPage";
 
 export default function App() {
   return (
@@ -50,7 +50,6 @@ function AppRoutes() {
       {/* Auth (anonymous) */}
       <Route path="/sign-in" element={<AuthGate mode="anon"><SignInPage /></AuthGate>} />
       <Route path="/login" element={<Navigate to="/sign-in" replace />} />
-      <Route path="/sign-up" element={<AuthGate mode="anon"><SignUpPage /></AuthGate>} />
       <Route path="/forgot-password" element={<AuthGate mode="anon"><ForgotPasswordPage /></AuthGate>} />
       <Route path="/reset-password" element={<AuthGate mode="anon"><ResetPasswordPage /></AuthGate>} />
       <Route path="/verify-code" element={<VerifyCodePage />} />
@@ -82,10 +81,8 @@ function AppRoutes() {
       <Route path="/settings" element={<AuthGate mode="authed"><SettingsPage /></AuthGate>} />
 
       {/* Stubs for sidebar items that don't have detailed designs yet */}
-      <Route path="/resource" element={<AuthGate mode="authed"><PlaceholderPage title="Resource" /></AuthGate>} />
+      <Route path="/contacts" element={<AuthGate mode="authed"><ContactsPage /></AuthGate>} />
       <Route path="/chat" element={<AuthGate mode="authed"><PlaceholderPage title="Chat" /></AuthGate>} />
-      <Route path="/authentication" element={<AuthGate mode="authed"><PlaceholderPage title="Authentication" description="The auth screens live under /sign-in, /sign-up, /forgot-password, /reset-password, /verify-code." /></AuthGate>} />
-      <Route path="/support" element={<AuthGate mode="authed"><PlaceholderPage title="Support" /></AuthGate>} />
 
       {/* Status pages */}
       <Route path="/error" element={<AuthGate mode="authed"><GenericErrorPage /></AuthGate>} />

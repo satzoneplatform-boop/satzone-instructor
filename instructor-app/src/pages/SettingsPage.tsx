@@ -7,8 +7,6 @@ import {
   Eye,
   EyeOff,
   Globe,
-  Key,
-  Languages as LangIcon,
   Link2,
   Lock,
   Mail,
@@ -74,16 +72,14 @@ import type { InstructorProfileRead } from "../api/types";
 import { ApiError } from "../api/client";
 import { cn } from "../lib/cn";
 
-type TabKey = "general" | "account" | "profile" | "link" | "languages" | "password" | "push";
+type TabKey = "general" | "profile" | "linking" | "social" | "security";
 
 const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; sub: string }[] = [
-  { key: "general",   label: "General",           icon: Settings,    sub: "Name, avatar & address" },
-  { key: "account",   label: "Account",           icon: User,        sub: "Email & basic info" },
-  { key: "profile",   label: "Profile",           icon: Briefcase,   sub: "Public instructor page" },
-  { key: "link",      label: "Link Account",      icon: Link2,       sub: "Social profiles" },
-  { key: "languages", label: "Languages",         icon: LangIcon,    sub: "Interface language" },
-  { key: "password",  label: "Password",          icon: Key,         sub: "Change your password" },
-  { key: "push",      label: "Notifications",     icon: ShieldCheck, sub: "Email & push settings" },
+  { key: "general",  label: "General",      icon: Settings,    sub: "Name, avatar & address" },
+  { key: "profile",  label: "Profile",      icon: Briefcase,   sub: "Public instructor page" },
+  { key: "linking",  label: "Linking",      icon: Link2,       sub: "Linked accounts & language" },
+  { key: "social",   label: "Social Links", icon: Globe,       sub: "Facebook, Twitter & more" },
+  { key: "security", label: "Security",     icon: ShieldCheck, sub: "Password & notifications" },
 ];
 
 export function SettingsPage() {
@@ -137,13 +133,11 @@ export function SettingsPage() {
         </aside>
 
         <section className="rounded-2xl bg-white p-6 shadow-sm">
-          {tab === "general"   && <GeneralTab />}
-          {tab === "account"   && <AccountTab />}
-          {tab === "profile"   && <ProfileTab />}
-          {tab === "link"      && <LinkAccountTab />}
-          {tab === "languages" && <LanguagesTab />}
-          {tab === "password"  && <PasswordTab />}
-          {tab === "push"      && <PushNotificationTab />}
+          {tab === "general"  && <GeneralTab />}
+          {tab === "profile"  && <ProfileTab />}
+          {tab === "linking"  && <LinkingTab />}
+          {tab === "social"   && <SocialLinksTab />}
+          {tab === "security" && <SecurityTab />}
         </section>
       </div>
     </AppShell>
@@ -304,73 +298,6 @@ function GeneralTab() {
       </div>
 
       <ActionRow msg={msg} busy={busy} saveLabel="Public" />
-    </form>
-  );
-}
-
-/* ============ Account ============ */
-
-function AccountTab() {
-  const { user } = useAuth();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    const [fn, ...rest] = user.full_name.split(" ");
-    setFirstName(fn ?? "");
-    setLastName(rest.join(" "));
-    setEmail(user.email);
-    setPhone(user.phone_number ?? "");
-  }, [user]);
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setMsg(null);
-    try {
-      await updateMe({ full_name: [firstName, lastName].filter(Boolean).join(" ").trim() });
-      setMsg({ kind: "ok", text: "Saved." });
-    } catch (e) {
-      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not save." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <form onSubmit={onSubmit}>
-      <TabHeader title="Account Setting" />
-
-      <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
-        <Field label="First Name">
-          <InputWithIcon icon={<User size={14} />} value={firstName} onChange={setFirstName} />
-        </Field>
-        <Field label="Last Name">
-          <InputWithIcon icon={<User size={14} />} value={lastName} onChange={setLastName} />
-        </Field>
-        <Field label="Email">
-          <InputWithIcon icon={<Mail size={14} />} value={email} onChange={setEmail} disabled />
-        </Field>
-        <Field label="Phone Number">
-          <InputWithIcon icon={<Phone size={14} />} value={phone} onChange={setPhone} />
-        </Field>
-      </div>
-
-      <div className="mt-6 flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={busy}
-          className="rounded-lg bg-primary px-6 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
-        >
-          {busy ? "Saving…" : "Save Change"}
-        </button>
-        {msg && <FormMessage msg={msg} />}
-      </div>
     </form>
   );
 }
@@ -591,72 +518,6 @@ function ProfileTab() {
   );
 }
 
-/* ============ Link Account ============ */
-
-const SOCIAL_FIELDS: { key: keyof SocialState; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; placeholder: string }[] = [
-  { key: "facebook",  label: "Facebook",  icon: Facebook,  placeholder: "https://facebook.com/Taildo" },
-  { key: "twitter",   label: "Twitter",   icon: Twitter,   placeholder: "https://twitter.com/Taildo" },
-  { key: "instagram", label: "Instagram", icon: Instagram, placeholder: "https://instagram.com/Taildo" },
-  { key: "youtube",   label: "YouTube",   icon: Youtube,   placeholder: "https://youtube.com/Taildo" },
-];
-
-type SocialState = { facebook: string; twitter: string; instagram: string; youtube: string };
-
-function LinkAccountTab() {
-  const [links, setLinks] = useState<SocialState>({
-    facebook: "https://facebook.com/Taildo",
-    twitter: "https://twitter.com/Taildo",
-    instagram: "https://instagram.com/Taildo",
-    youtube: "https://youtube.com/Taildo",
-  });
-  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    // Backend has no social-links field; store locally and surface that.
-    try {
-      localStorage.setItem("studyq.social", JSON.stringify(links));
-      setMsg({ kind: "ok", text: "Saved locally — backend doesn't store social profiles yet." });
-    } catch {
-      setMsg({ kind: "err", text: "Could not save." });
-    }
-  }
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("studyq.social");
-      if (raw) setLinks(JSON.parse(raw));
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  return (
-    <form onSubmit={onSubmit}>
-      <TabHeader
-        title="Link Account"
-        subtitle="These social profiles will appear on your website"
-      />
-
-      <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
-        {SOCIAL_FIELDS.map((f) => (
-          <Field key={f.key} label={f.label}>
-            <InputWithIcon
-              icon={<f.icon size={14} />}
-              value={links[f.key]}
-              onChange={(v) => setLinks((s) => ({ ...s, [f.key]: v }))}
-              placeholder={f.placeholder}
-            />
-          </Field>
-        ))}
-      </div>
-
-      <ActionRow msg={msg} busy={false} saveLabel="Save Change" />
-    </form>
-  );
-}
-
-/* ============ Languages ============ */
 
 const LANGUAGES = [
   { code: "en-US", label: "English (USA)", flag: "🇺🇸" },
@@ -670,7 +531,44 @@ const LANGUAGES = [
   { code: "in",    label: "India (IN)",    flag: "🇮🇳" },
 ];
 
-function LanguagesTab() {
+
+/* ============ Linking (Language + OAuth) ============ */
+
+function LinkingTab() {
+  return (
+    <div className="flex flex-col gap-8">
+      <div>
+        <TabHeader title="Language" subtitle="Choose the interface language for your dashboard" />
+        <div className="mt-4">
+          <LanguagesInner />
+        </div>
+      </div>
+
+      <div className="border-t border-violet-50 pt-6">
+        <TabHeader title="Connected Accounts" subtitle="External accounts linked to your IdrokHub profile" />
+        <div className="mt-4 flex items-center gap-4 rounded-xl border border-violet-100 p-4">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-sm">
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
+              <path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
+              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
+              <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.68 9c0-.593.102-1.17.284-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" />
+              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-[14px] font-medium text-ink">Google</p>
+            <p className="text-[12px] text-slate-400">Link your Google account for one-click sign-in</p>
+          </div>
+          <span className="rounded-md bg-violet-50 px-3 py-1 text-[12px] font-medium text-primary">
+            Managed by OAuth
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LanguagesInner() {
   const [selected, setSelected] = useState("en-US");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
@@ -691,8 +589,7 @@ function LanguagesTab() {
     l.label.toLowerCase().includes(query.trim().toLowerCase())
   );
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function save() {
     setBusy(true);
     setMsg(null);
     try {
@@ -706,21 +603,19 @@ function LanguagesTab() {
   }
 
   return (
-    <form onSubmit={onSubmit}>
-      <TabHeader title="Languages" subtitle="These social profiles will appear on your website" />
-
-      <div className="mt-5 flex items-center gap-2 rounded-full border-[1.5px] border-violet-50 bg-white px-3 py-2.5">
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2 rounded-full border-[1.5px] border-violet-50 bg-white px-3 py-2.5">
         <Search size={16} className="text-slate-400" />
         <input
           type="text"
-          placeholder="Search your country based languages"
+          placeholder="Search language…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="flex-1 bg-transparent text-[13px] text-ink placeholder:text-slate-300 focus:outline-none"
         />
       </div>
 
-      <ul className="mt-3 max-h-[360px] overflow-y-auto divide-y divide-violet-50">
+      <ul className="max-h-[280px] divide-y divide-violet-50 overflow-y-auto">
         {filtered.map((l) => {
           const active = selected === l.code;
           return (
@@ -730,7 +625,7 @@ function LanguagesTab() {
                 onClick={() => setSelected(l.code)}
                 className={cn(
                   "flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition",
-                  active ? "bg-violet-50 rounded-lg" : "hover:bg-violet-50/60"
+                  active ? "rounded-lg bg-violet-50" : "hover:bg-violet-50/60"
                 )}
               >
                 <span className="inline-flex items-center gap-3">
@@ -752,14 +647,94 @@ function LanguagesTab() {
         })}
       </ul>
 
-      <ActionRow msg={msg} busy={busy} saveLabel="Save Change" />
+      <div className="flex items-center gap-4 pt-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={busy}
+          className="rounded-lg bg-primary px-6 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
+        >
+          {busy ? "Saving…" : "Save Language"}
+        </button>
+        {msg && <FormMessage msg={msg} />}
+      </div>
+    </div>
+  );
+}
+
+/* ============ Social Links ============ */
+
+function SocialLinksTab() {
+  const [links, setLinks] = useState({
+    facebook:  "https://facebook.com/",
+    twitter:   "https://twitter.com/",
+    instagram: "https://instagram.com/",
+    youtube:   "https://youtube.com/",
+  });
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("studyq.social");
+      if (raw) setLinks(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, []);
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    try {
+      localStorage.setItem("studyq.social", JSON.stringify(links));
+      setMsg({ kind: "ok", text: "Social links saved." });
+    } catch {
+      setMsg({ kind: "err", text: "Could not save." });
+    }
+  }
+
+  const FIELDS: { key: keyof typeof links; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
+    { key: "facebook",  label: "Facebook",  icon: Facebook },
+    { key: "twitter",   label: "Twitter",   icon: Twitter },
+    { key: "instagram", label: "Instagram", icon: Instagram },
+    { key: "youtube",   label: "YouTube",   icon: Youtube },
+  ];
+
+  return (
+    <form onSubmit={onSubmit}>
+      <TabHeader title="Social Links" subtitle="These social profiles may appear on your public page" />
+      <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
+        {FIELDS.map((f) => (
+          <Field key={f.key} label={f.label}>
+            <InputWithIcon
+              icon={<f.icon size={14} />}
+              value={links[f.key]}
+              onChange={(v) => setLinks((s) => ({ ...s, [f.key]: v }))}
+              placeholder={`https://${f.key}.com/yourname`}
+            />
+          </Field>
+        ))}
+      </div>
+      <ActionRow msg={msg} busy={false} saveLabel="Save Links" />
     </form>
   );
 }
 
-/* ============ Password ============ */
+/* ============ Security (Password + Notifications) ============ */
 
-function PasswordTab() {
+function SecurityTab() {
+  return (
+    <div className="flex flex-col gap-10">
+      <div>
+        <TabHeader title="Change Password" subtitle="Update your password to keep your account secure" />
+        <PasswordForm />
+      </div>
+      <div className="border-t border-violet-50 pt-8">
+        <TabHeader title="Notifications" subtitle="Choose which emails and alerts you receive" />
+        <NotificationsForm />
+      </div>
+    </div>
+  );
+}
+
+function PasswordForm() {
   const [oldPw, setOldPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [showOld, setShowOld] = useState(false);
@@ -789,29 +764,16 @@ function PasswordTab() {
   }
 
   return (
-    <form onSubmit={onSubmit}>
-      <TabHeader title="Password" subtitle="Give me correct password and change password" />
-
-      <div className="mt-5 grid grid-cols-[1fr_220px] items-start gap-8">
+    <form onSubmit={onSubmit} className="mt-5">
+      <div className="grid grid-cols-[1fr_220px] items-start gap-8">
         <div className="flex flex-col gap-4">
-          <Field label="Old Password">
-            <PasswordInput
-              value={oldPw}
-              onChange={setOldPw}
-              show={showOld}
-              onToggle={() => setShowOld((v) => !v)}
-            />
+          <Field label="Current Password">
+            <PasswordInput value={oldPw} onChange={setOldPw} show={showOld} onToggle={() => setShowOld((v) => !v)} />
           </Field>
           <Field label="New Password">
-            <PasswordInput
-              value={newPw}
-              onChange={setNewPw}
-              show={showNew}
-              onToggle={() => setShowNew((v) => !v)}
-            />
+            <PasswordInput value={newPw} onChange={setNewPw} show={showNew} onToggle={() => setShowNew((v) => !v)} />
           </Field>
         </div>
-
         <div className="relative grid h-[180px] place-items-center">
           <div className="absolute inset-x-12 top-4 grid h-10 place-items-center rounded-md bg-primary text-white">
             <span className="font-bold tracking-[8px]">***</span>
@@ -824,46 +786,36 @@ function PasswordTab() {
           </div>
         </div>
       </div>
-
-      <ActionRow msg={msg} busy={busy} saveLabel="Yes! Update" />
+      <div className="mt-6 flex items-center gap-4">
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded-lg bg-primary px-6 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
+        >
+          {busy ? "Saving…" : "Update Password"}
+        </button>
+        {msg && <FormMessage msg={msg} />}
+      </div>
     </form>
   );
 }
 
-/* ============ Push Notification ============ */
-
-type NotifPrefs = {
+type NotifPrefs2 = {
   email_marketing: boolean;
   email_announcements: boolean;
   email_course_updates: boolean;
   push_enabled: boolean;
 };
 
-const NOTIF_ITEMS: { key: keyof NotifPrefs; label: string; sub: string }[] = [
-  {
-    key: "email_course_updates",
-    label: "Course Updates",
-    sub: "Notifications about new lessons, course changes, and enrollment confirmations.",
-  },
-  {
-    key: "email_announcements",
-    label: "Announcements",
-    sub: "Platform announcements, new features, and important account notices.",
-  },
-  {
-    key: "email_marketing",
-    label: "Marketing Emails",
-    sub: "Promotional offers, tips to grow your course catalogue, and success stories.",
-  },
-  {
-    key: "push_enabled",
-    label: "Push Notifications",
-    sub: "Real-time alerts for enrollments, payments, and student activity in the browser.",
-  },
+const NOTIF_ITEMS2: { key: keyof NotifPrefs2; label: string; sub: string }[] = [
+  { key: "email_course_updates", label: "Course Updates",     sub: "Enrollment confirmations, lesson updates, and course changes." },
+  { key: "email_announcements",  label: "Announcements",      sub: "Platform news, new features, and important account notices." },
+  { key: "email_marketing",      label: "Marketing Emails",   sub: "Promotional offers and tips to grow your course catalogue." },
+  { key: "push_enabled",         label: "Push Notifications", sub: "Real-time alerts for enrollments, payments, and student activity." },
 ];
 
-function PushNotificationTab() {
-  const [prefs, setPrefs] = useState<NotifPrefs>({
+function NotificationsForm() {
+  const [prefs, setPrefs] = useState<NotifPrefs2>({
     email_marketing: true,
     email_announcements: true,
     email_course_updates: true,
@@ -874,22 +826,20 @@ function PushNotificationTab() {
 
   useEffect(() => {
     getNotificationPrefs()
-      .then((p) => {
-        setPrefs({
-          email_marketing: p.email_marketing,
-          email_announcements: p.email_announcements,
-          email_course_updates: p.email_course_updates,
-          push_enabled: p.push_enabled,
-        });
-      })
+      .then((p) => setPrefs({
+        email_marketing:     p.email_marketing,
+        email_announcements: p.email_announcements,
+        email_course_updates: p.email_course_updates,
+        push_enabled:        p.push_enabled,
+      }))
       .catch(() => {});
   }, []);
 
-  function toggle(k: keyof NotifPrefs) {
+  function toggle(k: keyof NotifPrefs2) {
     setPrefs((p) => ({ ...p, [k]: !p[k] }));
   }
 
-  async function onSubmit(e: FormEvent) {
+  async function save(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setMsg(null);
@@ -904,11 +854,9 @@ function PushNotificationTab() {
   }
 
   return (
-    <form onSubmit={onSubmit}>
-      <TabHeader title="Notifications" subtitle="Choose which emails and alerts you receive" />
-
-      <ul className="mt-5 flex flex-col divide-y divide-violet-50">
-        {NOTIF_ITEMS.map((it) => (
+    <form onSubmit={save} className="mt-4">
+      <ul className="flex flex-col divide-y divide-violet-50">
+        {NOTIF_ITEMS2.map((it) => (
           <li key={it.key} className="flex items-start justify-between gap-4 py-4">
             <div className="flex-1">
               <p className="text-[14px] font-medium text-secondary">{it.label}</p>
@@ -918,8 +866,16 @@ function PushNotificationTab() {
           </li>
         ))}
       </ul>
-
-      <ActionRow msg={msg} busy={busy} saveLabel="Save Preferences" />
+      <div className="mt-4 flex items-center gap-4">
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded-lg bg-primary px-6 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
+        >
+          {busy ? "Saving…" : "Save Preferences"}
+        </button>
+        {msg && <FormMessage msg={msg} />}
+      </div>
     </form>
   );
 }

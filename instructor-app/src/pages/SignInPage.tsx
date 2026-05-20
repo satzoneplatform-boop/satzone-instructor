@@ -52,10 +52,7 @@ export function SignInPage() {
       <form onSubmit={onSubmit} className="flex flex-col gap-5">
         <AuthHeader title="Sign In" subtitle="Welcome back, you've been missed!" />
 
-        <div className="flex items-center gap-3">
-          <SocialButton provider="google" href={`${API_BASE}/auth/google/login`} />
-          <SocialButton provider="apple" />
-        </div>
+        <SocialButton provider="google" href={`${API_BASE}/auth/google/login`} />
 
         <div className="flex items-center gap-3 text-[12px] text-slate-400">
           <div className="h-px flex-1 bg-violet-100" />
@@ -101,35 +98,25 @@ export function SignInPage() {
         </PrimaryButton>
 
         <p className="text-center text-[13px] text-slate-500">
-          Don't have an account yet?{" "}
-          <Link to="/sign-up" className="font-medium text-primary hover:underline">
-            Sign Up
-          </Link>
+          Instructor access only. Contact{" "}
+          <a href="mailto:satzoneplatform@gmail.com" className="font-medium text-primary hover:underline">
+            support
+          </a>{" "}
+          to get an account.
         </p>
       </form>
     </AuthLayout>
   );
 }
 
-function SocialButton({
-  provider,
-  href,
-}: {
-  provider: "google" | "apple";
-  href?: string;
-}) {
-  const Inner = (
-    <>
-      {provider === "google" ? <GoogleLogo /> : <AppleLogo />}
-      <span>Sign With {provider === "google" ? "Google" : "Apple"}</span>
-    </>
-  );
+function SocialButton({ provider, href }: { provider: "google"; href: string }) {
   const cls =
-    "flex h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-violet-100 bg-white text-[13px] font-medium text-secondary hover:bg-violet-50";
-  return href ? (
-    <a className={cls} href={href}>{Inner}</a>
-  ) : (
-    <button type="button" className={cls} title="Apple sign-in coming soon">{Inner}</button>
+    "flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-violet-100 bg-white text-[13px] font-medium text-secondary hover:bg-violet-50";
+  return (
+    <a className={cls} href={href}>
+      {provider === "google" && <GoogleLogo />}
+      <span>Sign in with Google</span>
+    </a>
   );
 }
 
@@ -144,10 +131,3 @@ function GoogleLogo() {
   );
 }
 
-function AppleLogo() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden className="text-ink">
-      <path d="M17.05 12.04c0-3.16 2.58-4.68 2.7-4.76-1.48-2.15-3.78-2.45-4.58-2.48-1.94-.2-3.8 1.14-4.78 1.14-1 0-2.5-1.12-4.13-1.09-2.12.03-4.1 1.24-5.2 3.14-2.22 3.85-.57 9.55 1.6 12.68 1.05 1.53 2.32 3.25 3.97 3.19 1.6-.07 2.2-1.03 4.14-1.03 1.93 0 2.47 1.03 4.15 1 1.71-.03 2.8-1.56 3.85-3.1 1.21-1.78 1.7-3.5 1.74-3.6-.04-.02-3.34-1.28-3.38-5.09zM13.83 2.84C14.7 1.78 15.29.33 15.13-1.1c-1.23.05-2.71.82-3.6 1.86-.79.92-1.49 2.4-1.3 3.8 1.36.1 2.74-.69 3.6-1.72z" />
-    </svg>
-  );
-}

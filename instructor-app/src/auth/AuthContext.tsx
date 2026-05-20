@@ -38,6 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       try {
         const me = await getMe();
+        if (me.role === "user") {
+          wipeTokens();
+          if (mounted) setStatus("anon");
+          return;
+        }
         if (mounted) {
           setUser(me);
           setStatus("authed");
@@ -72,6 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       needsPhoneVerify,
       async login(email, password) {
         const me = await apiLogin(email, password);
+        if (me.role === "user") {
+          // Students cannot access the instructor dashboard
+          await apiLogout().catch(() => {});
+          wipeTokens();
+          throw new ApiError(403, "forbidden", "This dashboard is for instructors only. Student accounts cannot sign in here.");
+        }
         setUser(me);
         setStatus("authed");
         return me;
