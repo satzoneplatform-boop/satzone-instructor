@@ -5,6 +5,7 @@
 
 import { api } from "./client";
 import type {
+  AdminCourseRead,
   AdminInstructorCreate,
   AdminInstructorRead,
   AdminInstructorUpdate,
@@ -47,9 +48,18 @@ export async function listInstructors(params: { page?: number; size?: number; se
 }
 
 export async function getInstructor(idOrSlug: string): Promise<PublicInstructorDetail> {
-  // Public detail endpoint accepts the slug; pages pass the id, so we attempt
-  // both shapes and fall through to a 404 if neither matches.
   return api<PublicInstructorDetail>(`/instructors/${idOrSlug}`);
+}
+
+export async function listInstructorCourses(
+  slug: string,
+  params: { page?: number; size?: number } = {}
+): Promise<Page<AdminCourseRead>> {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.size) q.set("size", String(params.size));
+  const qs = q.toString();
+  return api<Page<AdminCourseRead>>(`/instructors/${slug}/courses${qs ? `?${qs}` : ""}`);
 }
 
 export async function createInstructor(_body: AdminInstructorCreate): Promise<AdminInstructorRead> {
