@@ -7,7 +7,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { TrendingUp, Activity } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { OVERVIEW_DATA } from "../data/mock";
 import type { OverviewPoint } from "../hooks/useDashboardStats";
 
@@ -36,10 +36,6 @@ export function OverviewChart({ data, loading }: Props) {
             </span>
           )}
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-lg border border-violet-100 px-3 py-2 text-[13px] font-medium text-secondary">
-          <Activity size={14} className="text-slate-400" />
-          Per course
-        </span>
       </div>
 
       <div className="mt-4 flex items-center justify-center gap-6 text-[10px] text-slate-600">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowDownUp, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { type Txn } from "../data/mock";
 import { cn } from "../lib/cn";
 
@@ -15,6 +16,7 @@ const COLUMNS = [
 ];
 
 export function TransactionTable({ rows, loading }: { rows: Txn[]; loading?: boolean }) {
+  const nav = useNavigate();
   const [sortCol, setSortCol] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
   const [page, setPage] = useState(1);
@@ -63,7 +65,10 @@ export function TransactionTable({ rows, loading }: { rows: Txn[]; loading?: boo
         <h2 className="text-[18px] font-semibold text-ink">
           Transaction {loading && <span className="ml-2 text-[12px] font-normal text-slate-400">loading…</span>}
         </h2>
-        <button className="rounded-md border border-violet-100 px-3 py-2 text-[13px] font-medium text-primary">
+        <button
+          onClick={() => nav("/transactions")}
+          className="rounded-md border border-violet-100 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-50 transition"
+        >
           View All
         </button>
       </div>
@@ -118,7 +123,7 @@ export function TransactionTable({ rows, loading }: { rows: Txn[]; loading?: boo
         <span className="text-[13px] text-slate-600">
           Showing {showFrom} to {showTo} of {sorted.length} results
         </span>
-        <nav className="flex items-center gap-1">
+        {totalPages > 1 && <nav className="flex items-center gap-1">
           <button
             onClick={() => changePage(safePage - 1)}
             disabled={safePage === 1}
@@ -151,7 +156,7 @@ export function TransactionTable({ rows, loading }: { rows: Txn[]; loading?: boo
           >
             <ChevronRight size={16} />
           </button>
-        </nav>
+        </nav>}
       </div>
     </section>
   );
