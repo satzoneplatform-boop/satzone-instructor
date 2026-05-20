@@ -1,9 +1,7 @@
 import {
   BookOpen,
-  ChevronDown,
   ClipboardList,
   GraduationCap,
-  LayoutGrid,
   PanelLeftClose,
   PanelLeftOpen,
   PhoneCall,
@@ -13,7 +11,6 @@ import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "../lib/cn";
 
 const MENU = [
-  { icon: LayoutGrid,    label: "Dashboards",  to: "/",              match: (p: string) => p === "/" },
   { icon: GraduationCap, label: "Teachers",    to: "/teachers",      match: (p: string) => p.startsWith("/teachers") },
   { icon: Users,         label: "Students",    to: "/students",      match: (p: string) => p.startsWith("/students") },
   { icon: BookOpen,      label: "Course",      to: "/courses",       match: (p: string) => p.startsWith("/courses") },
@@ -82,9 +79,6 @@ export function Sidebar({ collapsed, onToggle }: Props) {
               />
               {!collapsed && (
                 <span className="flex-1 text-[16px] font-medium leading-6">{item.label}</span>
-              )}
-              {!collapsed && item.to === "/" && (
-                <ChevronDown size={20} className="text-secondary" />
               )}
             </NavLink>
           );
