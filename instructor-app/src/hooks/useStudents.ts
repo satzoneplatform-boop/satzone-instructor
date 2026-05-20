@@ -2,9 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { listCourseStudents, listMyCourses } from "../api/instructor";
 import { type StudentRow, type StudentStatus } from "../data/studentsMock";
 
-function statusFromCompletion(completedAt: string | null): StudentStatus {
-  if (completedAt) return "active";
-  return "pending";
+function statusFromCompletion(_completedAt: string | null): StudentStatus {
+  return "active";
 }
 
 function fmtDate(iso: string): string {

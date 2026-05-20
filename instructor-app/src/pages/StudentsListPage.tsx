@@ -3,15 +3,13 @@ import {
   Search,
   SlidersHorizontal,
   Download,
-  Plus,
   ArrowDownUp,
   Eye,
-  Pencil,
   Trash2,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { exportExcel } from "../lib/exportExcel";
@@ -97,12 +95,6 @@ export function StudentsListPage() {
           >
             <Download size={16} /> Export
           </button>
-          <Link
-            to="/students/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-secondary/90"
-          >
-            <Plus size={16} /> Add Student
-          </Link>
         </div>
       </div>
 
@@ -162,7 +154,6 @@ export function StudentsListPage() {
                 key={r.id}
                 r={r}
                 onView={() => nav(`/students/${r.id}`)}
-                onEdit={() => nav(`/students/${r.id}/edit`)}
                 onDelete={() => setToDelete(r)}
               />
             ))}
@@ -204,12 +195,10 @@ export function StudentsListPage() {
 function Row({
   r,
   onView,
-  onEdit,
   onDelete,
 }: {
   r: StudentRow;
   onView: () => void;
-  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -237,9 +226,6 @@ function Row({
           <ActionBtn onClick={onView} className="bg-positive-50 text-positive-600">
             <Eye size={16} />
           </ActionBtn>
-          <ActionBtn onClick={onEdit} className="bg-violet-50 text-primary">
-            <Pencil size={16} />
-          </ActionBtn>
           <ActionBtn onClick={onDelete} className="bg-danger-50 text-danger-500">
             <Trash2 size={16} />
           </ActionBtn>
@@ -264,9 +250,9 @@ function ProgressBar({ value }: { value: number }) {
 
 function StatusPill({ status }: { status: StudentStatus }) {
   const map: Record<StudentStatus, { bg: string; text: string; label: string }> = {
-    active: { bg: "bg-positive-50", text: "text-positive-600", label: "Active" },
-    pending: { bg: "bg-warn-50", text: "text-amber-600", label: "Pending" },
-    suspend: { bg: "bg-danger-50", text: "text-danger-500", label: "Suspend" },
+    active:  { bg: "bg-positive-50", text: "text-positive-600", label: "Active" },
+    pending: { bg: "bg-positive-50", text: "text-positive-600", label: "Active" },
+    suspend: { bg: "bg-danger-50",   text: "text-danger-500",   label: "Suspended" },
   };
   const m = map[status];
   return (
