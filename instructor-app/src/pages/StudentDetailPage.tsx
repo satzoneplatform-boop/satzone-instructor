@@ -64,7 +64,7 @@ export function StudentDetailPage() {
             price: e.course
               ? fmtPrice(e.course.discount_price_cents ?? e.course.price_cents, e.course.currency)
               : "—",
-            status: e.completed_at ? "active" : "pending",
+            status: "active",
             progress: Math.round(e.progress_percent),
           }));
           setCourses(mapped);
@@ -269,13 +269,8 @@ function EnrolledCoursesCard({ rows, loading }: { rows: EnrolledCourseRow[]; loa
                 </div>
               </td>
               <td className="py-3">
-                <span
-                  className={cn(
-                    "inline-flex items-center justify-center rounded-md px-2 py-0.5 text-[11px] font-medium",
-                    c.status === "active" ? "bg-positive-50 text-positive-600" : "bg-warn-50 text-amber-600"
-                  )}
-                >
-                  {c.status === "active" ? "Completed" : "In Progress"}
+                <span className="inline-flex items-center justify-center rounded-md bg-positive-50 px-2 py-0.5 text-[11px] font-medium text-positive-600">
+                  {c.progress >= 100 ? "Completed" : "Active"}
                 </span>
               </td>
               <td className="py-3">
