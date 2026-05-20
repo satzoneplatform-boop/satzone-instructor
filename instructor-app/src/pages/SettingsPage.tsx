@@ -1029,7 +1029,7 @@ function ActionRow({
         type="reset"
         className="text-[14px] font-medium text-danger-500 hover:underline"
       >
-        No! Cancel
+        Cancel
       </button>
       {msg && <FormMessage msg={msg} />}
     </div>
