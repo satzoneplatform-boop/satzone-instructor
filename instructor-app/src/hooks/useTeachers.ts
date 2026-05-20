@@ -4,9 +4,7 @@ import type { InstructorSummary, Page } from "../api/types";
 import { type TeacherRow, type TeacherStatus } from "../data/teachersMock";
 
 function inferStatus(_idx: number): TeacherStatus {
-  // Backend has no first-class status; rotate through mocks for visual variety.
-  const ring: TeacherStatus[] = ["active", "active", "pending", "active", "suspend"];
-  return ring[_idx % ring.length];
+  return "active";
 }
 
 // Public catalog list of instructors — read-only for an instructor account

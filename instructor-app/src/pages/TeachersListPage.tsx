@@ -260,7 +260,7 @@ function Row({
 function StatusPill({ status }: { status: TeacherStatus }) {
   const map: Record<TeacherStatus, { bg: string; text: string; label: string }> = {
     active: { bg: "bg-positive-50", text: "text-positive-600", label: "Active" },
-    pending: { bg: "bg-warn-50", text: "text-amber-600", label: "Pending" },
+    pending: { bg: "bg-positive-50", text: "text-positive-600", label: "Active" },
     suspend: { bg: "bg-danger-50", text: "text-danger-500", label: "Suspend" },
   };
   const m = map[status];
