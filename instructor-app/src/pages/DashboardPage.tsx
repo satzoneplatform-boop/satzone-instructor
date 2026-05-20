@@ -1,5 +1,27 @@
 import { AppShell } from "../components/AppShell";
 import { StatCard } from "../components/StatCard";
+
+function StatCardSkeleton() {
+  return (
+    <div className="h-[126px] animate-pulse rounded-2xl bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="h-4 w-28 rounded bg-slate-100" />
+        <div className="flex">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className={`h-6 w-6 rounded-full bg-slate-100 border-2 border-white${i > 0 ? " -ml-2" : ""}`} />
+          ))}
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-4">
+        <div className="h-12 w-12 rounded-xl bg-slate-100" />
+        <div className="flex flex-col gap-2">
+          <div className="h-6 w-20 rounded bg-slate-100" />
+          <div className="h-3 w-28 rounded bg-slate-100" />
+        </div>
+      </div>
+    </div>
+  );
+}
 import { OverviewChart } from "../components/OverviewChart";
 import { StudentAnalysisChart } from "../components/StudentAnalysisChart";
 import { TransactionTable } from "../components/TransactionTable";
@@ -26,9 +48,10 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-4 gap-6">
-        {stats.map((s) => (
-          <StatCard key={s.label} {...s} />
-        ))}
+        {statsLoading && stats.length === 0
+          ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+          : stats.map((s) => <StatCard key={s.label} {...s} />)
+        }
       </div>
 
       <div className="mt-6 grid grid-cols-[1.18fr_1fr] gap-6">

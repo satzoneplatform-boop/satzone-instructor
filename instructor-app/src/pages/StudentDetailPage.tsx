@@ -16,7 +16,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { getUser, listEnrollments } from "../api/users";
-import { ENROLLED_COURSES_MOCK, type EnrolledCourseRow } from "../data/studentsMock";
+import { type EnrolledCourseRow } from "../data/studentsMock";
 import { cn } from "../lib/cn";
 import type { AdminUserRead } from "../api/types";
 
@@ -34,7 +34,7 @@ export function StudentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
   const [data, setData] = useState<AdminUserRead | null>(null);
-  const [courses, setCourses] = useState<EnrolledCourseRow[]>(ENROLLED_COURSES_MOCK);
+  const [courses, setCourses] = useState<EnrolledCourseRow[]>([]);
   const [stats, setStats] = useState({ courses: 0, hours: 0, completed: 0 });
   const [loading, setLoading] = useState(true);
 

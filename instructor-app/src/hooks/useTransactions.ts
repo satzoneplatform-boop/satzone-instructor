@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { listMyOrders } from "../api/payments";
-import { TRANSACTIONS as MOCK_TXNS, type Txn } from "../data/mock";
+import { listMyCourses } from "../api/instructor";
+import { type Txn } from "../data/mock";
 
 function brandToMethod(provider: string | null | undefined): Txn["method"] {
   if (!provider) return "mastercard";
@@ -13,31 +14,45 @@ function fmtMoney(cents: number, currency = "USD"): string {
 }
 
 export function useTransactions(): { rows: Txn[]; loading: boolean } {
-  const [rows, setRows] = useState<Txn[]>(MOCK_TXNS);
+  const [rows, setRows] = useState<Txn[]>([]);   // no mock initial state
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    listMyOrders()
-      .then((orders) => {
+
+    async function load() {
+      try {
+        const [orders, coursePage] = await Promise.all([
+          listMyOrders(),
+          listMyCourses({ size: 100 }),
+        ]);
         if (!mounted) return;
-        if (!orders.length) return; // keep mocks for empty state
+
+        const courseMap = new Map(coursePage.items.map((c) => [c.id, c.title]));
+
         const mapped: Txn[] = orders.slice(0, 10).map((o, i) => ({
           id: o.id,
-          name: `Order ${o.id.slice(0, 6)}`,
+          name: `Order #${o.id.slice(0, 8).toUpperCase()}`,
           avatar: `https://i.pravatar.cc/80?img=${20 + (i % 50)}`,
-          course: o.item_kind === "course" ? `Course ${o.course_id?.slice(0, 6) ?? ""}` : `Program ${o.program_id?.slice(0, 6) ?? ""}`,
+          course:
+            o.item_kind === "course" && o.course_id
+              ? (courseMap.get(o.course_id) ?? `Course …${o.course_id.slice(-6)}`)
+              : `Program …${(o.program_id ?? "").slice(-6)}`,
           price: fmtMoney(o.amount_cents, o.currency || "USD"),
           method: brandToMethod(o.provider),
           cardLast4: "----",
           status: o.status === "paid" ? "completed" : "cancelled",
         }));
-        setRows(mapped);
-      })
-      .catch(() => {
-        // keep mocks
-      })
-      .finally(() => mounted && setLoading(false));
+
+        if (mounted) setRows(mapped);
+      } catch {
+        // leave rows empty on error — table shows "No transactions found"
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    load();
     return () => {
       mounted = false;
     };

@@ -27,7 +27,7 @@ function shortName(title: string): string {
 }
 
 const INITIAL: DashboardData = {
-  stats: MOCK_STATS,
+  stats: [],          // start empty — no flash of fake numbers
   overview: [],
   analysis: [],
   loading: true,
