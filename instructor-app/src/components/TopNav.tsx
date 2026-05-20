@@ -1,14 +1,12 @@
-import { Bell, Settings, ChevronDown } from "lucide-react";
+import { Bell, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { useAuth } from "../auth/AuthContext";
 
 export function TopNav() {
   const { user } = useAuth();
-  const nav = useNavigate();
-  const [openDropdown, setOpenDropdown] = useState<"notif" | "profile" | null>(null);
+const [openDropdown, setOpenDropdown] = useState<"notif" | "profile" | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,14 +32,6 @@ export function TopNav() {
             <Bell size={20} className="text-secondary" />
           </button>
 
-<button
-            type="button"
-            onClick={() => nav("/settings")}
-            className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-violet-200 bg-white transition hover:bg-violet-50"
-            aria-label="Settings"
-          >
-            <Settings size={20} className="text-secondary" />
-          </button>
         </div>
 
         <div className="h-10 w-px bg-violet-200" />
