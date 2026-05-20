@@ -2,6 +2,7 @@ import {
   BookOpen,
   ClipboardList,
   GraduationCap,
+  LayoutGrid,
   PanelLeftClose,
   PanelLeftOpen,
   PhoneCall,
@@ -11,6 +12,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "../lib/cn";
 
 const MENU = [
+  { icon: LayoutGrid,    label: "Dashboards",  to: "/",              match: (p: string) => p === "/" },
   { icon: GraduationCap, label: "Teachers",    to: "/teachers",      match: (p: string) => p.startsWith("/teachers") },
   { icon: Users,         label: "Students",    to: "/students",      match: (p: string) => p.startsWith("/students") },
   { icon: BookOpen,      label: "Course",      to: "/courses",       match: (p: string) => p.startsWith("/courses") },
