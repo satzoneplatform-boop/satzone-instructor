@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { getAccessToken } from "./tokens";
 import type {
   AssessmentCreate,
   AssessmentInstructorRead,
@@ -180,6 +181,47 @@ export function uploadLessonVideo(lessonId: string, file: File, durationSeconds?
     file,
     durationSeconds ? { duration_seconds: String(durationSeconds) } : undefined
   );
+}
+
+/** Same as uploadLessonVideo but reports real upload progress via XHR. */
+export function uploadLessonVideoWithProgress(
+  lessonId: string,
+  file: File,
+  onProgress: (pct: number) => void,
+  durationSeconds?: number
+): Promise<LessonAdminRead> {
+  const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (durationSeconds) fd.append("duration_seconds", String(durationSeconds));
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${BASE}/instructor/lessons/${lessonId}/video`);
+
+    const token = getAccessToken();
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText) as LessonAdminRead); }
+        catch { reject(new Error("Invalid response")); }
+      } else {
+        try {
+          const body = JSON.parse(xhr.responseText);
+          reject(new Error(body?.error?.message ?? `HTTP ${xhr.status}`));
+        } catch {
+          reject(new Error(`HTTP ${xhr.status}`));
+        }
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.send(fd);
+  });
 }
 
 export function uploadLessonResource(lessonId: string, file: File) {
