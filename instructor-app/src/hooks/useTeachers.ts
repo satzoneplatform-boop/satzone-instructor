@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { InstructorSummary, Page } from "../api/types";
-import { TEACHERS_MOCK, type TeacherRow, type TeacherStatus } from "../data/teachersMock";
+import { type TeacherRow, type TeacherStatus } from "../data/teachersMock";
 
 function inferStatus(_idx: number): TeacherStatus {
   // Backend has no first-class status; rotate through mocks for visual variety.
@@ -21,8 +21,8 @@ function listPublicInstructors(params: { page?: number; size?: number; search?: 
 }
 
 export function useTeachers(page = 1, size = 20) {
-  const [rows, setRows] = useState<TeacherRow[]>(TEACHERS_MOCK);
-  const [total, setTotal] = useState(TEACHERS_MOCK.length);
+  const [rows, setRows] = useState<TeacherRow[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -52,9 +52,7 @@ export function useTeachers(page = 1, size = 20) {
         setRows(mapped);
         setTotal(res.total);
       })
-      .catch(() => {
-        // keep mocks
-      })
+      .catch(() => {})
       .finally(() => mounted && setLoading(false));
     return () => {
       mounted = false;

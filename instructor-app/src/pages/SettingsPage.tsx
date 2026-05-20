@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
+  Briefcase,
   Camera,
   ChevronDown,
   ChevronRight,
@@ -13,10 +14,12 @@ import {
   Mail,
   MapPin,
   Phone,
+  Plus,
   Search,
   Settings,
   ShieldCheck,
   User,
+  X,
 } from "lucide-react";
 
 function Facebook({ size = 14, className }: { size?: number; className?: string }) {
@@ -62,18 +65,25 @@ import {
   updateOnboarding,
   uploadMyAvatar,
 } from "../api/me";
+import {
+  getMyInstructorProfile,
+  updateMyInstructorProfile,
+  uploadMyInstructorAvatar,
+} from "../api/instructor";
+import type { InstructorProfileRead } from "../api/types";
 import { ApiError } from "../api/client";
 import { cn } from "../lib/cn";
 
-type TabKey = "general" | "account" | "link" | "languages" | "password" | "push";
+type TabKey = "general" | "account" | "profile" | "link" | "languages" | "password" | "push";
 
 const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; sub: string }[] = [
-  { key: "general",   label: "General",           icon: Settings,    sub: "Est arcu pharetra pellentesque" },
-  { key: "account",   label: "Account",           icon: User,        sub: "Est arcu pharetra pellentesque" },
-  { key: "link",      label: "Link Account",      icon: Link2,       sub: "Est arcu pharetra pellentesque" },
-  { key: "languages", label: "Languages",         icon: LangIcon,    sub: "Est arcu pharetra pellentesque" },
-  { key: "password",  label: "Password",          icon: Key,         sub: "Est arcu pharetra pellentesque" },
-  { key: "push",      label: "Push Notification", icon: ShieldCheck, sub: "Est arcu pharetra pellentesque" },
+  { key: "general",   label: "General",           icon: Settings,    sub: "Name, avatar & address" },
+  { key: "account",   label: "Account",           icon: User,        sub: "Email & basic info" },
+  { key: "profile",   label: "Profile",           icon: Briefcase,   sub: "Public instructor page" },
+  { key: "link",      label: "Link Account",      icon: Link2,       sub: "Social profiles" },
+  { key: "languages", label: "Languages",         icon: LangIcon,    sub: "Interface language" },
+  { key: "password",  label: "Password",          icon: Key,         sub: "Change your password" },
+  { key: "push",      label: "Notifications",     icon: ShieldCheck, sub: "Email & push settings" },
 ];
 
 export function SettingsPage() {
@@ -129,6 +139,7 @@ export function SettingsPage() {
         <section className="rounded-2xl bg-white p-6 shadow-sm">
           {tab === "general"   && <GeneralTab />}
           {tab === "account"   && <AccountTab />}
+          {tab === "profile"   && <ProfileTab />}
           {tab === "link"      && <LinkAccountTab />}
           {tab === "languages" && <LanguagesTab />}
           {tab === "password"  && <PasswordTab />}
@@ -360,6 +371,222 @@ function AccountTab() {
         </button>
         {msg && <FormMessage msg={msg} />}
       </div>
+    </form>
+  );
+}
+
+/* ============ Instructor Profile ============ */
+
+function ProfileTab() {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<InstructorProfileRead | null>(null);
+  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
+  const [bio, setBio] = useState("");
+  const [expertiseInput, setExpertiseInput] = useState("");
+  const [expertise, setExpertise] = useState<string[]>([]);
+  const [linkedin, setLinkedin] = useState("");
+  const [twitter, setTwitter] = useState("");
+  const [website, setWebsite] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+
+  useEffect(() => {
+    getMyInstructorProfile()
+      .then((p) => {
+        setProfile(p);
+        setName(p.name ?? user?.full_name ?? "");
+        setTitle(p.title ?? "");
+        setBio(p.bio ?? "");
+        setExpertise(p.expertise ?? []);
+        setLinkedin(p.linkedin_url ?? "");
+        setTwitter(p.twitter_url ?? "");
+        setWebsite(p.website_url ?? "");
+        setAvatarUrl(p.avatar_url ?? "");
+      })
+      .catch(() => {
+        // Profile may not exist yet — prefill from user account
+        setName(user?.full_name ?? "");
+      });
+  }, [user]);
+
+  async function onPickAvatar(file: File) {
+    setAvatarBusy(true);
+    setMsg(null);
+    try {
+      const r = await uploadMyInstructorAvatar(file);
+      setAvatarUrl(r.url);
+      setMsg({ kind: "ok", text: "Profile photo updated." });
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Upload failed." });
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  function addExpertiseTag() {
+    const tag = expertiseInput.trim();
+    if (!tag || expertise.includes(tag)) return;
+    setExpertise((prev) => [...prev, tag]);
+    setExpertiseInput("");
+  }
+
+  function removeExpertiseTag(tag: string) {
+    setExpertise((prev) => prev.filter((t) => t !== tag));
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg(null);
+    try {
+      await updateMyInstructorProfile({
+        name: name.trim() || undefined,
+        title: title.trim() || undefined,
+        bio: bio.trim() || undefined,
+        expertise: expertise.length ? expertise : undefined,
+        linkedin_url: linkedin.trim() || undefined,
+        twitter_url: twitter.trim() || undefined,
+        website_url: website.trim() || undefined,
+      });
+      setMsg({ kind: "ok", text: "Profile saved." });
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not save profile." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <TabHeader
+        title="Instructor Profile"
+        subtitle="This is your public instructor page visible to students"
+      />
+
+      {/* Avatar */}
+      <div className="mt-5 flex items-center gap-4 border-b border-violet-50 pb-5">
+        <div className="relative">
+          <div className="grid h-16 w-16 overflow-hidden rounded-full bg-violet-50">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <Camera size={22} className="m-auto text-slate-400" />
+            )}
+          </div>
+          {profile && (
+            <span className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-positive-500 text-white">
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                <path d="M1 3.5L4 6.5L9 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          )}
+        </div>
+        <div className="flex flex-1 items-center gap-3">
+          <span className="text-[12px] text-slate-500">
+            {profile
+              ? `${profile.students_count.toLocaleString()} students · ${profile.courses_count} courses · ${Number(profile.rating_avg).toFixed(1)}★`
+              : "Upload a professional photo for your public profile"}
+          </span>
+          <label className="ml-auto cursor-pointer rounded-lg bg-violet-50 px-4 py-2 text-[13px] font-medium text-primary hover:bg-violet-100">
+            {avatarBusy ? "Uploading…" : "Change Photo"}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              disabled={avatarBusy}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const f = e.target.files?.[0];
+                if (f) void onPickAvatar(f);
+                e.target.value = "";
+              }}
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* Core fields */}
+      <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
+        <Field label="Display Name">
+          <InputWithIcon icon={<User size={14} />} value={name} onChange={setName} placeholder="Your full name" />
+        </Field>
+        <Field label="Title / Role">
+          <InputWithIcon icon={<Briefcase size={14} />} value={title} onChange={setTitle} placeholder="e.g. Senior Web Developer" />
+        </Field>
+      </div>
+
+      <div className="mt-4">
+        <Field label="Bio">
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            rows={4}
+            maxLength={1000}
+            placeholder="Tell students about your background and teaching style…"
+            className="w-full resize-none rounded-lg border border-violet-100 bg-white px-3 py-2.5 text-[14px] text-ink placeholder:text-slate-300 focus:border-primary focus:outline-none"
+          />
+          <span className="mt-1 block text-right text-[11px] text-slate-400">{bio.length}/1000</span>
+        </Field>
+      </div>
+
+      {/* Expertise tags */}
+      <div className="mt-4">
+        <Field label="Expertise">
+          <div className="flex gap-2">
+            <InputWithIcon
+              icon={null}
+              value={expertiseInput}
+              onChange={setExpertiseInput}
+              placeholder="e.g. React, Node.js, Python"
+            />
+            <button
+              type="button"
+              onClick={addExpertiseTag}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-primary hover:bg-violet-100"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+          {expertise.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {expertise.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-[12px] font-medium text-primary"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeExpertiseTag(tag)}
+                    className="text-primary/60 hover:text-danger-500"
+                    aria-label={`Remove ${tag}`}
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </Field>
+      </div>
+
+      {/* Social links */}
+      <h3 className="mt-6 text-[15px] font-semibold text-ink">Social Links</h3>
+      <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-4">
+        <Field label="LinkedIn">
+          <InputWithIcon icon={<Globe size={14} />} value={linkedin} onChange={setLinkedin} placeholder="https://linkedin.com/in/yourname" />
+        </Field>
+        <Field label="Twitter / X">
+          <InputWithIcon icon={<Globe size={14} />} value={twitter} onChange={setTwitter} placeholder="https://twitter.com/yourname" />
+        </Field>
+        <Field label="Website">
+          <InputWithIcon icon={<Globe size={14} />} value={website} onChange={setWebsite} placeholder="https://yourwebsite.com" />
+        </Field>
+      </div>
+
+      <ActionRow msg={msg} busy={busy} saveLabel="Save Profile" />
     </form>
   );
 }
@@ -605,52 +832,42 @@ function PasswordTab() {
 
 /* ============ Push Notification ============ */
 
-type NotifKey =
-  | "orderConfirmation"
-  | "orderEdited"
-  | "orderCancelled"
-  | "paymentError"
-  | "customerInvite"
-  | "contactCustomer"
-  | "accountPasswordReset"
-  | "emailMarketing";
+type NotifPrefs = {
+  email_marketing: boolean;
+  email_announcements: boolean;
+  email_course_updates: boolean;
+  push_enabled: boolean;
+};
 
-const NOTIF_SECTIONS: { title: string; items: { key: NotifKey; label: string; sub: string }[] }[] = [
+const NOTIF_ITEMS: { key: keyof NotifPrefs; label: string; sub: string }[] = [
   {
-    title: "Order",
-    items: [
-      { key: "orderConfirmation", label: "Order Confirmation", sub: "Sent automatically to the customer after they place their order." },
-      { key: "orderEdited",       label: "Order Edited",       sub: "Sent to the customer after their order is edited (if you select this option)." },
-      { key: "orderCancelled",    label: "Order Cancelled",    sub: "Sent automatically to the customer after their order is cancelled (if you select this option)." },
-      { key: "paymentError",      label: "Payment Error",      sub: "Sent automatically to the customer if their payment can't be processed during checkout." },
-    ],
+    key: "email_course_updates",
+    label: "Course Updates",
+    sub: "Notifications about new lessons, course changes, and enrollment confirmations.",
   },
   {
-    title: "Customer",
-    items: [
-      { key: "customerInvite",        label: "Customer Account Invite", sub: "Sent automatically to the customer after they place their order." },
-      { key: "contactCustomer",       label: "Contact Customer",        sub: "Sent to the customer after their order is edited (if you select this option)." },
-      { key: "accountPasswordReset",  label: "Account Password Reset",  sub: "Sent automatically to the customer if their payment can't be processed during checkout." },
-    ],
+    key: "email_announcements",
+    label: "Announcements",
+    sub: "Platform announcements, new features, and important account notices.",
   },
   {
-    title: "Email Marketing",
-    items: [
-      { key: "emailMarketing", label: "Email Marketing", sub: "Sent automatically to the customer after they place their order." },
-    ],
+    key: "email_marketing",
+    label: "Marketing Emails",
+    sub: "Promotional offers, tips to grow your course catalogue, and success stories.",
+  },
+  {
+    key: "push_enabled",
+    label: "Push Notifications",
+    sub: "Real-time alerts for enrollments, payments, and student activity in the browser.",
   },
 ];
 
 function PushNotificationTab() {
-  const [prefs, setPrefs] = useState<Record<NotifKey, boolean>>({
-    orderConfirmation: true,
-    orderEdited: false,
-    orderCancelled: false,
-    paymentError: true,
-    customerInvite: true,
-    contactCustomer: false,
-    accountPasswordReset: true,
-    emailMarketing: true,
+  const [prefs, setPrefs] = useState<NotifPrefs>({
+    email_marketing: true,
+    email_announcements: true,
+    email_course_updates: true,
+    push_enabled: false,
   });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -658,17 +875,17 @@ function PushNotificationTab() {
   useEffect(() => {
     getNotificationPrefs()
       .then((p) => {
-        setPrefs((s) => ({
-          ...s,
-          emailMarketing: p.email_marketing,
-          // Map the only two that have direct backend equivalents
-          orderConfirmation: p.email_course_updates,
-        }));
+        setPrefs({
+          email_marketing: p.email_marketing,
+          email_announcements: p.email_announcements,
+          email_course_updates: p.email_course_updates,
+          push_enabled: p.push_enabled,
+        });
       })
       .catch(() => {});
   }, []);
 
-  function toggle(k: NotifKey) {
+  function toggle(k: keyof NotifPrefs) {
     setPrefs((p) => ({ ...p, [k]: !p[k] }));
   }
 
@@ -677,15 +894,8 @@ function PushNotificationTab() {
     setBusy(true);
     setMsg(null);
     try {
-      // Only email_marketing has a stable backend mapping; persist what we can.
-      await updateNotificationPrefs({
-        email_marketing: prefs.emailMarketing,
-        email_course_updates: prefs.orderConfirmation,
-      });
-      setMsg({
-        kind: "ok",
-        text: "Saved (only marketing + course-updates persist to backend yet).",
-      });
+      await updateNotificationPrefs(prefs);
+      setMsg({ kind: "ok", text: "Notification preferences saved." });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not save." });
     } finally {
@@ -694,25 +904,22 @@ function PushNotificationTab() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="-m-6 p-6">
-      {NOTIF_SECTIONS.map((sec, idx) => (
-        <div key={sec.title} className={cn("flex flex-col gap-4", idx > 0 && "mt-6 border-t border-violet-50 pt-6")}>
-          <h3 className="text-[15px] font-semibold text-ink">{sec.title}</h3>
-          <ul className="flex flex-col gap-4">
-            {sec.items.map((it) => (
-              <li key={it.key} className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <p className="text-[14px] font-medium text-secondary">{it.label}</p>
-                  <p className="mt-0.5 text-[12px] text-slate-500">{it.sub}</p>
-                </div>
-                <Toggle on={prefs[it.key]} onToggle={() => toggle(it.key)} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+    <form onSubmit={onSubmit}>
+      <TabHeader title="Notifications" subtitle="Choose which emails and alerts you receive" />
 
-      <ActionRow msg={msg} busy={busy} saveLabel="Yes! Update" />
+      <ul className="mt-5 flex flex-col divide-y divide-violet-50">
+        {NOTIF_ITEMS.map((it) => (
+          <li key={it.key} className="flex items-start justify-between gap-4 py-4">
+            <div className="flex-1">
+              <p className="text-[14px] font-medium text-secondary">{it.label}</p>
+              <p className="mt-0.5 text-[12px] text-slate-500">{it.sub}</p>
+            </div>
+            <Toggle on={prefs[it.key]} onToggle={() => toggle(it.key)} />
+          </li>
+        ))}
+      </ul>
+
+      <ActionRow msg={msg} busy={busy} saveLabel="Save Preferences" />
     </form>
   );
 }

@@ -23,12 +23,11 @@ const ERROR_BY_CODE: Record<string, string> = {
 };
 
 export function SignInPage() {
-  const { login, loginDemo } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [demoBusy, setDemoBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
@@ -41,20 +40,10 @@ export function SignInPage() {
       if (e instanceof ApiError) {
         setError(ERROR_BY_CODE[e.code] ?? e.message);
       } else {
-        setError("Network error. Try demo mode below if the backend isn't running.");
+        setError("Network error. Please check your connection and try again.");
       }
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  async function onDemo() {
-    setError(null);
-    setDemoBusy(true);
-    try {
-      await loginDemo();
-    } finally {
-      setDemoBusy(false);
     }
   }
 
@@ -110,15 +99,6 @@ export function SignInPage() {
         <PrimaryButton type="submit" disabled={submitting}>
           {submitting ? "Signing in…" : "Sign In"}
         </PrimaryButton>
-
-        <button
-          type="button"
-          onClick={onDemo}
-          disabled={demoBusy || submitting}
-          className="h-11 rounded-lg border-2 border-dashed border-violet-200 bg-violet-50/40 text-[13px] font-medium text-primary hover:bg-violet-50 disabled:opacity-60"
-        >
-          {demoBusy ? "Loading demo…" : "Skip login — explore with demo data →"}
-        </button>
 
         <p className="text-center text-[13px] text-slate-500">
           Don't have an account yet?{" "}

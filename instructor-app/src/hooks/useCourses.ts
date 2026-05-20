@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { listCourses } from "../api/courses";
 import { useAuth } from "../auth/AuthContext";
-import { COURSES_MOCK, type CourseRow, type CourseStatus } from "../data/coursesMock";
+import { type CourseRow, type CourseStatus } from "../data/coursesMock";
 
 function fmtPrice(cents: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(cents / 100);
@@ -22,8 +22,8 @@ function mapStatus(s: string): CourseStatus {
 
 export function useCourses(page = 1, size = 20) {
   const { user } = useAuth();
-  const [rows, setRows] = useState<CourseRow[]>(COURSES_MOCK);
-  const [total, setTotal] = useState(COURSES_MOCK.length);
+  const [rows, setRows] = useState<CourseRow[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
 

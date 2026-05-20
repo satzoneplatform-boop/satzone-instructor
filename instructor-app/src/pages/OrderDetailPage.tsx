@@ -1,24 +1,111 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Download, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, ChevronUp, Download, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
-import { ORDER_DETAIL_MOCK } from "../data/transactionsMock";
+import { listMyOrders } from "../api/payments";
+import { getMyCourse } from "../api/instructor";
+import { ApiError } from "../api/client";
+import type { OrderRead, InstructorCourseRead } from "../api/types";
 import { cn } from "../lib/cn";
 
 type Tab = "details" | "course" | "invoice";
 
+function fmtMoney(cents: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(cents / 100);
+}
+
+function fmtDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const STATUS_MAP: Record<string, { bg: string; text: string; label: string }> = {
+  paid:      { bg: "bg-positive-50", text: "text-positive-600", label: "Paid" },
+  pending:   { bg: "bg-warn-50",     text: "text-amber-600",    label: "Pending" },
+  cancelled: { bg: "bg-danger-50",   text: "text-danger-500",   label: "Cancelled" },
+  refunded:  { bg: "bg-slate-100",   text: "text-slate-500",    label: "Refunded" },
+  failed:    { bg: "bg-danger-50",   text: "text-danger-500",   label: "Failed" },
+};
+
 export function OrderDetailPage() {
-  const { id: _id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
   const [tab, setTab] = useState<Tab>("details");
-  const data = ORDER_DETAIL_MOCK;
+  const [order, setOrder] = useState<OrderRead | null>(null);
+  const [course, setCourse] = useState<InstructorCourseRead | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+
+    async function load() {
+      try {
+        const orders = await listMyOrders();
+        if (!mounted) return;
+        const found = orders.find((o) => o.id === id);
+        if (!found) {
+          setError("Order not found.");
+          return;
+        }
+        setOrder(found);
+
+        if (found.course_id) {
+          try {
+            const c = await getMyCourse(found.course_id);
+            if (mounted) setCourse(c);
+          } catch {
+            // course lookup optional — don't fail the page
+          }
+        }
+      } catch (e) {
+        if (mounted) setError(e instanceof ApiError ? e.message : "Could not load order.");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <AppShell>
+        <p className="text-[14px] text-slate-500">Loading order…</p>
+      </AppShell>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <AppShell>
+        <div className="rounded-lg bg-danger-50 p-4 text-[13px] text-danger-500">
+          {error ?? "Order not found."}
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h1 className="text-[20px] font-bold text-ink">Order Details</h1>
-          <p className="mt-1 text-[14px] text-slate-600">Let's check your update today</p>
+          <p className="mt-1 text-[14px] text-slate-600">
+            #{order.id.slice(0, 16).toUpperCase()}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -26,14 +113,7 @@ export function OrderDetailPage() {
             onClick={() => nav("/transactions")}
             className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[14px] font-medium text-secondary"
           >
-            <X size={16} /> Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => nav("/transactions/new")}
-            className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-secondary/90"
-          >
-            <Plus size={16} /> Add Transaction
+            <X size={16} /> Back
           </button>
         </div>
       </div>
@@ -59,53 +139,62 @@ export function OrderDetailPage() {
         </nav>
 
         <div className="pt-5">
-          {tab === "details" && <DetailsTab data={data} />}
-          {tab === "course" && <CourseTab data={data} />}
-          {tab === "invoice" && <InvoiceTab data={data} />}
+          {tab === "details" && <DetailsTab order={order} />}
+          {tab === "course" && <CourseTab order={order} course={course} />}
+          {tab === "invoice" && <InvoiceTab order={order} course={course} />}
         </div>
       </section>
     </AppShell>
   );
 }
 
-function DetailsTab({ data }: { data: typeof ORDER_DETAIL_MOCK }) {
+function DetailsTab({ order }: { order: OrderRead }) {
   const [billingOpen, setBillingOpen] = useState(true);
+  const st = STATUS_MAP[order.status] ?? STATUS_MAP["pending"];
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-[15px] font-semibold text-ink">Oder Details</h3>
+        <h3 className="text-[15px] font-semibold text-ink">Order Details</h3>
         <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary">
-          <Download size={14} /> Expert
+          <Download size={14} /> Export
         </button>
       </div>
 
-      <div className="grid grid-cols-[1.2fr_1fr_1fr_1.4fr] gap-6 border-b border-violet-50 pb-5">
-        <Col label="Name">
-          <div className="flex items-center gap-2">
-            <img src={data.customer.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
-            <span className="text-[14px] font-medium text-ink">{data.customer.name}</span>
-          </div>
+      <div className="grid grid-cols-4 gap-6 border-b border-violet-50 pb-5">
+        <Col label="Order ID">
+          <span className="font-mono text-[13px]">#{order.id.slice(0, 12).toUpperCase()}</span>
         </Col>
-        <Col label="Email">{data.customer.email}</Col>
-        <Col label="Phone">{data.customer.phone}</Col>
-        <Col label="Location">{data.customer.location}</Col>
+        <Col label="Status">
+          <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-medium", st.bg, st.text)}>
+            {st.label}
+          </span>
+        </Col>
+        <Col label="Amount">
+          <span className="text-[15px] font-semibold text-ink">
+            {fmtMoney(order.amount_cents, order.currency)}
+          </span>
+        </Col>
+        <Col label="Provider">
+          <span className="capitalize">{order.provider ?? "—"}</span>
+        </Col>
       </div>
 
       <div className="grid grid-cols-2 gap-6 border-b border-violet-50 pb-5">
         <div>
-          <h4 className="text-[14px] font-semibold text-ink">Payment method</h4>
-          <dl className="mt-2 flex flex-col gap-1 text-[13px] text-secondary">
-            <Pair label="Credit Card" value="" />
-            <Pair label="Transaction ID:" value={data.payment.transactionId} />
-            <Pair label="Amount:" value={data.payment.amount} />
+          <h4 className="text-[14px] font-semibold text-ink">Payment details</h4>
+          <dl className="mt-2 flex flex-col gap-1.5 text-[13px] text-secondary">
+            <Pair label="Provider:" value={<span className="capitalize">{order.provider ?? "—"}</span>} />
+            <Pair label="Currency:" value={order.currency.toUpperCase()} />
+            <Pair label="Amount paid:" value={fmtMoney(order.amount_cents, order.currency)} />
           </dl>
         </div>
         <div>
-          <h4 className="text-[14px] font-semibold text-ink">Shipping method</h4>
-          <dl className="mt-2 flex flex-col gap-1 text-[13px] text-secondary">
-            <Pair label={data.shipping.carrier} value="" />
-            <Pair label="Tracking Code:" value={data.shipping.trackingCode} />
-            <Pair label="Date:" value={data.shipping.date} />
+          <h4 className="text-[14px] font-semibold text-ink">Timeline</h4>
+          <dl className="mt-2 flex flex-col gap-1.5 text-[13px] text-secondary">
+            <Pair label="Created:"   value={fmtDate(order.created_at)} />
+            <Pair label="Paid:"      value={fmtDate(order.paid_at)} />
+            <Pair label="Cancelled:" value={fmtDate(order.cancelled_at)} />
           </dl>
         </div>
       </div>
@@ -116,7 +205,7 @@ function DetailsTab({ data }: { data: typeof ORDER_DETAIL_MOCK }) {
           onClick={() => setBillingOpen((v) => !v)}
           className="flex w-full items-center justify-between"
         >
-          <h4 className="text-[15px] font-semibold text-ink">Billing address</h4>
+          <h4 className="text-[15px] font-semibold text-ink">Item</h4>
           {billingOpen ? (
             <ChevronUp size={16} className="text-slate-400" />
           ) : (
@@ -124,16 +213,10 @@ function DetailsTab({ data }: { data: typeof ORDER_DETAIL_MOCK }) {
           )}
         </button>
         {billingOpen && (
-          <div className="mt-4 grid grid-cols-3 gap-x-6 gap-y-2 text-[13px] text-secondary">
-            <Pair label="First name:" value={data.billing.firstName} />
-            <Pair label="State/Region:" value={data.billing.state} />
-            <Pair label="Phone:" value={data.billing.phone} />
-            <Pair label="Last name:" value={data.billing.lastName} />
-            <Pair label="City:" value={data.billing.city} />
-            <Pair label="Email:" value={data.billing.email} />
-            <Pair label="Address:" value={data.billing.address} />
-            <Pair label="Country:" value={data.billing.country} />
-            <Pair label="Postcode:" value={data.billing.postcode} />
+          <div className="mt-3 text-[13px] text-secondary">
+            <Pair label="Type:"    value={<span className="capitalize">{order.item_kind}</span>} />
+            {order.course_id   && <Pair label="Course ID:"  value={<span className="font-mono">{order.course_id}</span>} />}
+            {order.program_id  && <Pair label="Program ID:" value={<span className="font-mono">{order.program_id}</span>} />}
           </div>
         )}
       </div>
@@ -141,13 +224,31 @@ function DetailsTab({ data }: { data: typeof ORDER_DETAIL_MOCK }) {
   );
 }
 
-function CourseTab({ data }: { data: typeof ORDER_DETAIL_MOCK }) {
+function CourseTab({ order, course }: { order: OrderRead; course: InstructorCourseRead | null }) {
+  if (!order.course_id) {
+    return (
+      <div className="py-8 text-center text-[14px] text-slate-400">
+        This order is not linked to a course.
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="py-8 text-center text-[14px] text-slate-400">
+        Course details unavailable.
+      </div>
+    );
+  }
+
+  const price = fmtMoney(course.discount_price_cents ?? course.price_cents, course.currency);
+
   return (
     <div>
       <div className="flex items-center justify-between pb-4">
-        <h3 className="text-[15px] font-semibold text-ink">Courses</h3>
+        <h3 className="text-[15px] font-semibold text-ink">Course</h3>
         <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary">
-          <Download size={14} /> Expert
+          <Download size={14} /> Export
         </button>
       </div>
 
@@ -155,65 +256,80 @@ function CourseTab({ data }: { data: typeof ORDER_DETAIL_MOCK }) {
         <thead>
           <tr className="border-y border-violet-50 text-left text-[13px] font-medium text-slate-600">
             <th className="py-3">Course</th>
-            <th className="py-3">Price</th>
-            <th className="py-3">Quantity</th>
-            <th className="py-3 text-right">Total</th>
+            <th className="py-3">Level</th>
+            <th className="py-3">Lessons</th>
+            <th className="py-3 text-right">Price</th>
           </tr>
         </thead>
         <tbody>
-          {data.items.map((it) => (
-            <tr key={it.id}>
-              <td className="py-3">
-                <div className="flex items-center gap-3">
-                  <img src={it.thumb} alt="" className="h-10 w-10 rounded-md object-cover" />
-                  <span className="text-[14px] font-medium text-ink">{it.title}</span>
+          <tr>
+            <td className="py-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={course.thumbnail_url ?? `https://picsum.photos/seed/${course.id}/48/48`}
+                  alt=""
+                  className="h-10 w-10 rounded-md object-cover"
+                />
+                <div>
+                  <p className="text-[14px] font-medium text-ink">{course.title}</p>
+                  {course.subtitle && <p className="text-[12px] text-slate-400">{course.subtitle}</p>}
                 </div>
-              </td>
-              <td className="py-3 text-[14px] text-secondary">{fmt(it.price)}</td>
-              <td className="py-3 text-[14px] text-secondary">{it.quantity}</td>
-              <td className="py-3 text-right text-[14px] font-medium text-ink">{fmt(it.price * it.quantity)}</td>
-            </tr>
-          ))}
+              </div>
+            </td>
+            <td className="py-3 text-[13px] capitalize text-secondary">{course.level.replace("_", " ")}</td>
+            <td className="py-3 text-[13px] text-secondary">{course.lectures_count}</td>
+            <td className="py-3 text-right text-[14px] font-medium text-ink">{price}</td>
+          </tr>
         </tbody>
       </table>
     </div>
   );
 }
 
-function InvoiceTab({ data }: { data: typeof ORDER_DETAIL_MOCK }) {
-  const inv = data.invoice;
+function InvoiceTab({ order, course }: { order: OrderRead; course: InstructorCourseRead | null }) {
+  const amount = fmtMoney(order.amount_cents, order.currency);
+  const amountNum = order.amount_cents / 100;
+  const tax = 0;
+  const discount = 0;
+
   return (
     <div>
       <div className="flex items-center justify-between pb-4">
-        <h3 className="text-[15px] font-semibold text-ink">Courses</h3>
-        <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary">
-          <Download size={14} /> Expert
+        <h3 className="text-[15px] font-semibold text-ink">Invoice</h3>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary"
+        >
+          <Download size={14} /> Print / Export
         </button>
       </div>
 
-      <div className="rounded-xl bg-white p-5">
+      <div className="rounded-xl border border-violet-100 p-6">
         <div className="flex items-start justify-between gap-6">
-          <div className="grid h-[120px] w-[120px] place-items-center rounded-lg bg-primary text-center text-white">
+          <div className="grid h-[100px] w-[100px] place-items-center rounded-lg bg-primary text-center text-white">
             <div className="flex flex-col gap-1">
-              <span className="text-[12px] font-medium tracking-wide">INVOICE</span>
-              <span className="text-[16px] font-bold">{inv.number}</span>
+              <span className="text-[10px] font-medium tracking-wide">INVOICE</span>
+              <span className="text-[13px] font-bold">#{order.id.slice(0, 8).toUpperCase()}</span>
             </div>
           </div>
 
           <div className="flex-1 text-[13px] text-secondary">
-            <p className="font-semibold text-ink">{inv.company.name}</p>
-            <p>{inv.company.address}</p>
-            <p>{inv.company.phone}</p>
-            <p>{inv.company.email}</p>
-            <p>{inv.company.site}</p>
+            <p className="font-semibold text-ink">IdrokHub Platform</p>
+            <p>{order.provider ? `Paid via ${order.provider}` : "Payment processor"}</p>
           </div>
 
-          <div className="flex flex-col items-end gap-2 text-[13px]">
-            <span className="text-slate-500">{inv.date}</span>
-            <div className="flex items-center gap-1.5">
-              <div className="grid h-5 w-5 place-items-center rounded bg-primary text-[10px] font-bold text-white">U</div>
-              <span className="font-semibold text-ink">UStudy</span>
-            </div>
+          <div className="flex flex-col items-end gap-1.5 text-[13px]">
+            <span className="text-slate-500">{fmtDate(order.paid_at ?? order.created_at)}</span>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium",
+                (STATUS_MAP[order.status] ?? STATUS_MAP["pending"]).bg,
+                (STATUS_MAP[order.status] ?? STATUS_MAP["pending"]).text
+              )}
+            >
+              {(STATUS_MAP[order.status] ?? STATUS_MAP["pending"]).label}
+            </span>
           </div>
         </div>
 
@@ -221,32 +337,28 @@ function InvoiceTab({ data }: { data: typeof ORDER_DETAIL_MOCK }) {
           <table className="w-full">
             <thead>
               <tr className="border-y border-violet-50 text-left text-[13px] font-medium text-slate-600">
-                <th className="py-3">Course</th>
-                <th className="py-3">Price</th>
-                <th className="py-3">Quantity</th>
+                <th className="py-3">Item</th>
                 <th className="py-3 text-right">Total</th>
               </tr>
             </thead>
             <tbody>
-              {data.items.map((it) => (
-                <tr key={it.id}>
-                  <td className="py-3 text-[14px] text-ink">{it.title}</td>
-                  <td className="py-3 text-[14px] text-secondary">{fmt(it.price)}</td>
-                  <td className="py-3 text-[14px] text-secondary">{it.quantity}</td>
-                  <td className="py-3 text-right text-[14px] font-medium text-ink">{fmt(it.price * it.quantity)}</td>
-                </tr>
-              ))}
+              <tr>
+                <td className="py-3 text-[14px] text-ink">
+                  {course ? course.title : `${order.item_kind} purchase`}
+                </td>
+                <td className="py-3 text-right text-[14px] font-medium text-ink">{amount}</td>
+              </tr>
             </tbody>
           </table>
         </div>
 
         <div className="mt-6 flex justify-end">
-          <dl className="w-[300px] space-y-2 text-[13px]">
-            <Pair label="Subtotal" value={fmt(inv.subtotal)} />
-            <Pair label={`TAX(${inv.taxPct}%)`} value={fmt(inv.subtotal * (inv.taxPct / 100))} />
-            <Pair label="Discount" value={`-${fmt(inv.discount)}`} valueClass="text-danger-500" />
+          <dl className="w-[280px] space-y-2 text-[13px]">
+            <Pair label="Subtotal" value={amount} />
+            <Pair label="Tax (0%)" value={fmtMoney(tax, order.currency)} />
+            <Pair label="Discount" value={`-${fmtMoney(discount, order.currency)}`} valueClass="text-danger-500" />
             <div className="my-1 border-t border-violet-100" />
-            <Pair label="Total" value={fmt(inv.total)} bold />
+            <Pair label="Total" value={fmtMoney(amountNum * 100, order.currency)} bold />
           </dl>
         </div>
       </div>
@@ -280,12 +392,4 @@ function Pair({
       <span className={cn("font-medium text-ink", bold && "text-[15px]", valueClass)}>{value}</span>
     </div>
   );
-}
-
-function fmt(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(amount);
 }

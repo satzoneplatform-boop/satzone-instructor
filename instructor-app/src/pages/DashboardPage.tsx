@@ -9,7 +9,7 @@ import { useAuth } from "../auth/AuthContext";
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const stats = useDashboardStats();
+  const { stats, overview, analysis, loading: statsLoading } = useDashboardStats();
   const txns = useTransactions();
 
   const firstName = user?.full_name?.split(" ")[0] ?? "there";
@@ -32,8 +32,8 @@ export function DashboardPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-[1.18fr_1fr] gap-6">
-        <OverviewChart />
-        <StudentAnalysisChart />
+        <OverviewChart data={overview} loading={statsLoading} />
+        <StudentAnalysisChart data={analysis} loading={statsLoading} />
       </div>
 
       <div className="mt-6">

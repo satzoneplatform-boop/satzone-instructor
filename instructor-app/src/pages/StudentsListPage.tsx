@@ -21,21 +21,51 @@ import type { StudentRow, StudentStatus } from "../data/studentsMock";
 import { cn } from "../lib/cn";
 
 const COLS = [
-  { label: "Name", sortable: true },
-  { label: "Course", sortable: true },
+  { label: "Name",     sortable: true },
+  { label: "Course",   sortable: true },
   { label: "Enrolled", sortable: true },
-  { label: "Price", sortable: true },
-  { label: "Status", sortable: true },
-  { label: "Action", sortable: false },
+  { label: "Price",    sortable: true },
+  { label: "Progress", sortable: true },
+  { label: "Status",   sortable: true },
+  { label: "Action",   sortable: false },
 ];
 
 export function StudentsListPage() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [toDelete, setToDelete] = useState<StudentRow | null>(null);
+  const [sortCol, setSortCol] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
   const { rows, total, loading, reload } = useStudents(page, 20, query);
   const nav = useNavigate();
   const { notify } = useToast();
+
+  function handleSort(label: string) {
+    if (sortCol !== label) { setSortCol(label); setSortDir("asc"); }
+    else if (sortDir === "asc") setSortDir("desc");
+    else { setSortCol(null); setSortDir(null); }
+  }
+
+  function getSortVal(r: StudentRow, col: string): string | number {
+    switch (col) {
+      case "Name":     return r.name;
+      case "Course":   return r.course;
+      case "Enrolled": return r.enrolledDate;
+      case "Price":    return parseFloat(String(r.price).replace(/[^0-9.]/g, "")) || 0;
+      case "Progress": return r.progress;
+      case "Status":   return r.status;
+      default:         return "";
+    }
+  }
+
+  const displayed = sortCol && sortDir
+    ? [...rows].sort((a, b) => {
+        const va = getSortVal(a, sortCol);
+        const vb = getSortVal(b, sortCol);
+        const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb));
+        return sortDir === "asc" ? cmp : -cmp;
+      })
+    : rows;
 
   return (
     <AppShell>
@@ -85,17 +115,32 @@ export function StudentsListPage() {
           <thead>
             <tr className="border-b border-violet-50 text-left">
               {COLS.map((c) => (
-                <th key={c.label} className="py-3 text-[13px] font-medium text-slate-600">
+                <th
+                  key={c.label}
+                  className={cn("py-3 text-[13px] font-medium text-slate-600", c.sortable && "cursor-pointer select-none")}
+                  onClick={c.sortable ? () => handleSort(c.label) : undefined}
+                >
                   <span className="inline-flex items-center gap-2">
                     {c.label}
-                    {c.sortable && <ArrowDownUp size={12} className="text-slate-400" />}
+                    {c.sortable && (
+                      <ArrowDownUp
+                        size={12}
+                        className={
+                          sortCol === c.label && sortDir === "asc"
+                            ? "text-blue-500"
+                            : sortCol === c.label && sortDir === "desc"
+                            ? "text-amber-500"
+                            : "text-slate-400"
+                        }
+                      />
+                    )}
                   </span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {displayed.map((r) => (
               <Row
                 key={r.id}
                 r={r}
@@ -104,7 +149,7 @@ export function StudentsListPage() {
                 onDelete={() => setToDelete(r)}
               />
             ))}
-            {rows.length === 0 && (
+            {displayed.length === 0 && (
               <tr>
                 <td colSpan={COLS.length} className="py-10 text-center text-[13px] text-slate-400">
                   {loading ? "Loading…" : "No students found."}
@@ -116,7 +161,7 @@ export function StudentsListPage() {
 
         <div className="flex items-center justify-between pt-4">
           <span className="text-[13px] text-slate-600">
-            Showing 1 to {Math.min(rows.length, 10)} of {total} results
+            Showing 1 to {Math.min(displayed.length, 10)} of {total} results
           </span>
           <Pager page={page} totalPages={Math.max(1, Math.ceil(total / 20))} onChange={setPage} />
         </div>
@@ -165,6 +210,9 @@ function Row({
       <td className="py-3 text-[14px] text-secondary">{r.enrolledDate}</td>
       <td className="py-3 text-[14px] text-ink">{r.price}</td>
       <td className="py-3">
+        <ProgressBar value={r.progress} />
+      </td>
+      <td className="py-3">
         <StatusPill status={r.status} />
       </td>
       <td className="py-3">
@@ -181,6 +229,19 @@ function Row({
         </div>
       </td>
     </tr>
+  );
+}
+
+function ProgressBar({ value }: { value: number }) {
+  const pct = Math.min(100, Math.max(0, value));
+  const color = pct >= 70 ? "bg-positive-500" : pct >= 35 ? "bg-amber-400" : "bg-danger-400";
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-1.5 w-[72px] overflow-hidden rounded-full bg-violet-100">
+        <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="min-w-[30px] text-[12px] text-slate-500">{pct}%</span>
+    </div>
   );
 }
 

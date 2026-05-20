@@ -37,6 +37,8 @@ export function TransactionsListPage() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [toDelete, setToDelete] = useState<TxnRow | null>(null);
+  const [sortCol, setSortCol] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
   const { rows, loading, reload } = useAdminTransactions();
   const nav = useNavigate();
 
@@ -45,6 +47,32 @@ export function TransactionsListPage() {
       r.name.toLowerCase().includes(query.trim().toLowerCase()) ||
       r.course.toLowerCase().includes(query.trim().toLowerCase())
   );
+
+  function handleSort(label: string) {
+    if (sortCol !== label) { setSortCol(label); setSortDir("asc"); }
+    else if (sortDir === "asc") setSortDir("desc");
+    else { setSortCol(null); setSortDir(null); }
+  }
+
+  function getSortVal(r: TxnRow, col: string): string | number {
+    switch (col) {
+      case "Customer Name":   return r.name;
+      case "Course":          return r.course;
+      case "Price":           return parseFloat(String(r.price).replace(/[^0-9.]/g, "")) || 0;
+      case "Payment Methods": return r.method;
+      case "Status":          return r.status;
+      default:                return "";
+    }
+  }
+
+  const displayed = sortCol && sortDir
+    ? [...filtered].sort((a, b) => {
+        const va = getSortVal(a, sortCol);
+        const vb = getSortVal(b, sortCol);
+        const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb));
+        return sortDir === "asc" ? cmp : -cmp;
+      })
+    : filtered;
 
   return (
     <AppShell>
@@ -92,17 +120,32 @@ export function TransactionsListPage() {
           <thead>
             <tr className="border-b border-violet-50 text-left">
               {COLS.map((c) => (
-                <th key={c.label} className="py-3 text-[13px] font-medium text-slate-600">
+                <th
+                  key={c.label}
+                  className={cn("py-3 text-[13px] font-medium text-slate-600", c.sortable && "cursor-pointer select-none")}
+                  onClick={c.sortable ? () => handleSort(c.label) : undefined}
+                >
                   <span className="inline-flex items-center gap-1.5">
                     {c.label}
-                    {c.sortable && <ArrowDownUp size={12} className="text-slate-400" />}
+                    {c.sortable && (
+                      <ArrowDownUp
+                        size={12}
+                        className={
+                          sortCol === c.label && sortDir === "asc"
+                            ? "text-blue-500"
+                            : sortCol === c.label && sortDir === "desc"
+                            ? "text-amber-500"
+                            : "text-slate-400"
+                        }
+                      />
+                    )}
                   </span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map((t) => (
+            {displayed.map((t) => (
               <Row
                 key={t.id}
                 t={t}
@@ -111,7 +154,7 @@ export function TransactionsListPage() {
                 onDelete={() => setToDelete(t)}
               />
             ))}
-            {filtered.length === 0 && (
+            {displayed.length === 0 && (
               <tr>
                 <td colSpan={COLS.length} className="py-10 text-center text-[13px] text-slate-400">
                   {loading ? "Loading…" : "No transactions found."}
@@ -123,7 +166,7 @@ export function TransactionsListPage() {
 
         <div className="flex items-center justify-between pt-4">
           <span className="text-[13px] text-slate-600">
-            Showing 1 to {Math.min(filtered.length, 10)} of 97 results
+            Showing 1 to {Math.min(displayed.length, 10)} of 97 results
           </span>
           <Pager page={page} totalPages={20} onChange={setPage} />
         </div>

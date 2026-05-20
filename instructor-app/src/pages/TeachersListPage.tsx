@@ -34,6 +34,8 @@ export function TeachersListPage() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [toDelete, setToDelete] = useState<TeacherRow | null>(null);
+  const [sortCol, setSortCol] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
   const { rows, total, loading, reload } = useTeachers(page, 20);
   const nav = useNavigate();
   const { notify } = useToast();
@@ -45,6 +47,33 @@ export function TeachersListPage() {
       (r) => r.name.toLowerCase().includes(q) || r.userId.toLowerCase().includes(q)
     );
   }, [rows, query]);
+
+  function handleSort(label: string) {
+    if (sortCol !== label) { setSortCol(label); setSortDir("asc"); }
+    else if (sortDir === "asc") setSortDir("desc");
+    else { setSortCol(null); setSortDir(null); }
+  }
+
+  function getSortVal(r: TeacherRow, col: string): string | number {
+    switch (col) {
+      case "Name":      return r.name;
+      case "Course":    return r.course;
+      case "Join Date": return r.joinDate;
+      case "Earning":   return parseFloat(String(r.earning).replace(/[^0-9.]/g, "")) || 0;
+      case "Balance":   return parseFloat(String(r.balance).replace(/[^0-9.]/g, "")) || 0;
+      case "Status":    return r.status;
+      default:          return "";
+    }
+  }
+
+  const displayed = sortCol && sortDir
+    ? [...filtered].sort((a, b) => {
+        const va = getSortVal(a, sortCol);
+        const vb = getSortVal(b, sortCol);
+        const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb));
+        return sortDir === "asc" ? cmp : -cmp;
+      })
+    : filtered;
 
   return (
     <AppShell>
@@ -96,17 +125,32 @@ export function TeachersListPage() {
           <thead>
             <tr className="border-b border-violet-50 text-left">
               {COLS.map((c) => (
-                <th key={c.label} className="py-3 text-[13px] font-medium text-slate-600">
+                <th
+                  key={c.label}
+                  className={cn("py-3 text-[13px] font-medium text-slate-600", c.sortable && "cursor-pointer select-none")}
+                  onClick={c.sortable ? () => handleSort(c.label) : undefined}
+                >
                   <span className="inline-flex items-center gap-2">
                     {c.label}
-                    {c.sortable && <ArrowDownUp size={12} className="text-slate-400" />}
+                    {c.sortable && (
+                      <ArrowDownUp
+                        size={12}
+                        className={
+                          sortCol === c.label && sortDir === "asc"
+                            ? "text-blue-500"
+                            : sortCol === c.label && sortDir === "desc"
+                            ? "text-amber-500"
+                            : "text-slate-400"
+                        }
+                      />
+                    )}
                   </span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map((r) => (
+            {displayed.map((r) => (
               <Row
                 key={r.id}
                 r={r}
@@ -115,7 +159,7 @@ export function TeachersListPage() {
                 onDelete={() => setToDelete(r)}
               />
             ))}
-            {filtered.length === 0 && (
+            {displayed.length === 0 && (
               <tr>
                 <td colSpan={COLS.length} className="py-10 text-center text-[13px] text-slate-400">
                   {loading ? "Loading…" : "No teachers found."}
@@ -127,7 +171,7 @@ export function TeachersListPage() {
 
         <div className="flex items-center justify-between pt-4">
           <span className="text-[13px] text-slate-600">
-            Showing 1 to {Math.min(filtered.length, 10)} of {total} results
+            Showing 1 to {Math.min(displayed.length, 10)} of {total} results
           </span>
           <Pager page={page} totalPages={Math.max(1, Math.ceil(total / 20))} onChange={setPage} />
         </div>

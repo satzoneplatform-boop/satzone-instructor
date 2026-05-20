@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { listCourseStudents, listMyCourses } from "../api/instructor";
-import { STUDENTS_MOCK, type StudentRow, type StudentStatus } from "../data/studentsMock";
+import { type StudentRow, type StudentStatus } from "../data/studentsMock";
 
 function statusFromCompletion(completedAt: string | null): StudentStatus {
   if (completedAt) return "active";
@@ -16,8 +16,8 @@ function fmtDate(iso: string): string {
 // students enrolled in their own courses. Aggregate across all my courses,
 // dedupe by user_id, and slice client-side for the given page.
 export function useStudents(page = 1, size = 20, query = "") {
-  const [rows, setRows] = useState<StudentRow[]>(STUDENTS_MOCK);
-  const [total, setTotal] = useState(STUDENTS_MOCK.length);
+  const [rows, setRows] = useState<StudentRow[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -46,7 +46,7 @@ export function useStudents(page = 1, size = 20, query = "") {
         if (!mounted) return;
 
         // Dedupe by user_id; remember which course we last saw them in.
-        const byUser = new Map<string, { courseTitle: string; priceCents: number; currency: string; enrolled_at: string; full_name: string; email: string; avatar_url: string | null; completed_at: string | null }>();
+        const byUser = new Map<string, { courseTitle: string; priceCents: number; currency: string; enrolled_at: string; full_name: string; email: string; avatar_url: string | null; completed_at: string | null; progress_percent: number }>();
         for (const p of studentPages) {
           if (!p) continue;
           for (const s of p.items) {
@@ -61,6 +61,7 @@ export function useStudents(page = 1, size = 20, query = "") {
                 email: s.email,
                 avatar_url: s.avatar_url,
                 completed_at: s.completed_at,
+                progress_percent: s.progress_percent,
               });
             }
           }
@@ -80,6 +81,7 @@ export function useStudents(page = 1, size = 20, query = "") {
           enrolledDate: fmtDate(v.enrolled_at),
           price: new Intl.NumberFormat("en-US", { style: "currency", currency: v.currency, maximumFractionDigits: 0 }).format(v.priceCents / 100),
           status: statusFromCompletion(v.completed_at),
+          progress: Math.round(v.progress_percent),
         }));
 
         if (!allMapped.length) {
@@ -91,7 +93,7 @@ export function useStudents(page = 1, size = 20, query = "") {
         setRows(allMapped.slice(start, start + size));
         setTotal(allMapped.length);
       } catch {
-        // keep mocks
+        // leave rows empty on error
       } finally {
         if (mounted) setLoading(false);
       }

@@ -20,7 +20,7 @@ import { ENROLLED_COURSES_MOCK, type EnrolledCourseRow } from "../data/studentsM
 import { cn } from "../lib/cn";
 import type { AdminUserRead } from "../api/types";
 
-const COL = ["Course Name", "Level", "Date", "Price", "Status", "Action"];
+const COL = ["Course Name", "Level", "Date", "Price", "Progress", "Status", "Action"];
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
@@ -35,18 +35,20 @@ export function StudentDetailPage() {
   const nav = useNavigate();
   const [data, setData] = useState<AdminUserRead | null>(null);
   const [courses, setCourses] = useState<EnrolledCourseRow[]>(ENROLLED_COURSES_MOCK);
+  const [stats, setStats] = useState({ courses: 0, hours: 0, completed: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
     let mounted = true;
     setLoading(true);
-    Promise.allSettled([getUser(id), listEnrollments({ user_id: id, size: 20 })])
+    Promise.allSettled([getUser(id), listEnrollments({ user_id: id, size: 100 })])
       .then(([userRes, enrollRes]) => {
         if (!mounted) return;
         if (userRes.status === "fulfilled") setData(userRes.value);
         if (enrollRes.status === "fulfilled" && enrollRes.value.items.length) {
-          const mapped: EnrolledCourseRow[] = enrollRes.value.items.map((e) => ({
+          const items = enrollRes.value.items;
+          const mapped: EnrolledCourseRow[] = items.map((e) => ({
             id: e.id,
             title: e.course?.title ?? "Untitled",
             code: `#${(e.course?.slug ?? "").slice(0, 6).toUpperCase()}`,
@@ -63,8 +65,14 @@ export function StudentDetailPage() {
               ? fmtPrice(e.course.discount_price_cents ?? e.course.price_cents, e.course.currency)
               : "—",
             status: e.completed_at ? "active" : "pending",
+            progress: Math.round(e.progress_percent),
           }));
           setCourses(mapped);
+          setStats({
+            courses: items.length,
+            hours: 0,
+            completed: items.filter((e) => e.completed_at !== null).length,
+          });
         }
       })
       .finally(() => mounted && setLoading(false));
@@ -93,7 +101,7 @@ export function StudentDetailPage() {
     <AppShell>
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="text-[20px] font-bold text-ink">{s.full_name}</h1>
+          <h1 className="text-[20px] font-bold text-ink">{loading ? "Loading…" : s.full_name}</h1>
           <p className="mt-1 text-[14px] text-slate-600">Let's check your update today</p>
         </div>
         <div className="flex items-center gap-3">
@@ -115,14 +123,14 @@ export function StudentDetailPage() {
       </div>
 
       <div className="grid grid-cols-[420px_1fr] gap-6">
-        <ProfileCard s={s} />
+        <ProfileCard s={s} stats={stats} />
         <EnrolledCoursesCard rows={courses} loading={loading} />
       </div>
     </AppShell>
   );
 }
 
-function ProfileCard({ s }: { s: AdminUserRead }) {
+function ProfileCard({ s, stats }: { s: AdminUserRead; stats: { courses: number; hours: number; completed: number } }) {
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm">
       <div className="flex flex-col items-center text-center">
@@ -132,12 +140,12 @@ function ProfileCard({ s }: { s: AdminUserRead }) {
           className="h-[120px] w-[120px] rounded-full object-cover"
         />
         <h2 className="mt-4 text-[18px] font-semibold text-ink">{s.full_name}</h2>
-        <span className="mt-1 text-[13px] text-slate-600">UI/UX Student</span>
+        <span className="mt-1 text-[13px] text-slate-600">{s.email}</span>
 
         <div className="mt-5 grid w-full grid-cols-3 divide-x divide-violet-50 rounded-xl bg-violet-50/40 py-3">
-          <Stat label="Courses" value="05" />
-          <Stat label="Hours" value="420" />
-          <Stat label="Certificate" value="2" />
+          <Stat label="Enrolled"   value={stats.courses   > 0 ? String(stats.courses)   : "—"} />
+          <Stat label="Completed"  value={stats.completed > 0 ? String(stats.completed) : "—"} />
+          <Stat label="Status"     value={s.is_active ? "Active" : "Inactive"} />
         </div>
       </div>
 
@@ -247,13 +255,27 @@ function EnrolledCoursesCard({ rows, loading }: { rows: EnrolledCourseRow[]; loa
               <td className="py-3 text-[13px] text-secondary">{c.date}</td>
               <td className="py-3 text-[13px] font-medium text-ink">{c.price}</td>
               <td className="py-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-16 overflow-hidden rounded-full bg-violet-100">
+                    <div
+                      className={cn(
+                        "h-full rounded-full",
+                        c.progress >= 70 ? "bg-positive-500" : c.progress >= 35 ? "bg-amber-400" : "bg-danger-400"
+                      )}
+                      style={{ width: `${Math.min(100, c.progress)}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-slate-500">{c.progress}%</span>
+                </div>
+              </td>
+              <td className="py-3">
                 <span
                   className={cn(
                     "inline-flex items-center justify-center rounded-md px-2 py-0.5 text-[11px] font-medium",
                     c.status === "active" ? "bg-positive-50 text-positive-600" : "bg-warn-50 text-amber-600"
                   )}
                 >
-                  {c.status === "active" ? "Active" : "Pending"}
+                  {c.status === "active" ? "Completed" : "In Progress"}
                 </span>
               </td>
               <td className="py-3">

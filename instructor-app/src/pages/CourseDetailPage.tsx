@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Globe2, Pencil, Plus, Send, Star, Tag, Upload, X } from "lucide-react";
+import { Archive, Globe2, Pencil, Plus, Send, Star, Tag, Upload, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { AssessmentsPanel } from "../components/AssessmentsPanel";
 import { CurriculumEditor } from "../components/CurriculumEditor";
 import { HLSPlayer } from "../components/HLSPlayer";
 import {
+  archiveMyCourse,
   getMyCourse,
   publishMyCourse,
   unpublishMyCourse,
@@ -50,6 +51,21 @@ export function CourseDetailPage() {
       mounted = false;
     };
   }, [id]);
+
+  async function onArchive() {
+    if (!course) return;
+    if (!window.confirm(`Archive "${course.title}"? It will be hidden from new students.`)) return;
+    setBusy(true);
+    try {
+      const next = await archiveMyCourse(course.id);
+      setCourse(next);
+      notify("Course archived.", "success");
+    } catch (e) {
+      notify(e instanceof ApiError ? e.message : "Could not archive.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onTogglePublish() {
     if (!course) return;
@@ -129,17 +145,29 @@ export function CourseDetailPage() {
           >
             <Pencil size={14} /> Edit details
           </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onTogglePublish}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[14px] font-medium text-white disabled:opacity-60",
-              course.status === "published" ? "bg-amber-500 hover:bg-amber-600" : "bg-positive-600 hover:bg-positive-500"
-            )}
-          >
-            {course.status === "published" ? "Unpublish" : "Publish"}
-          </button>
+          {course.status !== "archived" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onTogglePublish}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[14px] font-medium text-white disabled:opacity-60",
+                course.status === "published" ? "bg-amber-500 hover:bg-amber-600" : "bg-positive-600 hover:bg-positive-500"
+              )}
+            >
+              {course.status === "published" ? "Unpublish" : "Publish"}
+            </button>
+          )}
+          {course.status !== "archived" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onArchive}
+              className="inline-flex items-center gap-2 rounded-lg border border-orange-200 bg-white px-4 py-2.5 text-[14px] font-medium text-amber-600 hover:bg-amber-50 disabled:opacity-60"
+            >
+              <Archive size={14} /> Archive
+            </button>
+          )}
           <button
             type="button"
             onClick={() => nav("/courses")}

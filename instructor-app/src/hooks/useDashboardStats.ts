@@ -4,6 +4,16 @@ import { STATS as MOCK_STATS } from "../data/mock";
 
 type Stat = (typeof MOCK_STATS)[number];
 
+export type OverviewPoint = { name: string; enrollments: number; completions: number; progress: number };
+export type AnalysisPoint = { name: string; enrolled: number; completed: number };
+
+export type DashboardData = {
+  stats: Stat[];
+  overview: OverviewPoint[];
+  analysis: AnalysisPoint[];
+  loading: boolean;
+};
+
 function fmtNum(n: number): string {
   return n.toLocaleString("en-US");
 }
@@ -12,8 +22,19 @@ function fmtMoney(cents: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(dollars);
 }
 
-export function useDashboardStats(): Stat[] {
-  const [stats, setStats] = useState<Stat[]>(MOCK_STATS);
+function shortName(title: string): string {
+  return title.length > 14 ? title.slice(0, 13) + "…" : title;
+}
+
+const INITIAL: DashboardData = {
+  stats: MOCK_STATS,
+  overview: [],
+  analysis: [],
+  loading: true,
+};
+
+export function useDashboardStats(): DashboardData {
+  const [data, setData] = useState<DashboardData>(INITIAL);
 
   useEffect(() => {
     let mounted = true;
@@ -39,14 +60,38 @@ export function useDashboardStats(): Stat[] {
           totalRevenue += a.revenue_cents;
         }
 
-        setStats([
-          { ...MOCK_STATS[0], value: fmtNum(totalEnrollments) },
-          { ...MOCK_STATS[1], value: fmtNum(page.total) },
-          { ...MOCK_STATS[2], value: fmtNum(totalLectures) },
-          { ...MOCK_STATS[3], value: fmtMoney(totalRevenue) },
-        ]);
+        const overview: OverviewPoint[] = courses.slice(0, 7).map((c, i) => {
+          const a = analyticsList[i];
+          return {
+            name: shortName(c.title),
+            enrollments: a?.enrollments_count ?? 0,
+            completions: a?.completions_count ?? 0,
+            progress: Math.round(a?.average_progress_percent ?? 0),
+          };
+        });
+
+        const analysis: AnalysisPoint[] = courses.slice(0, 7).map((c, i) => {
+          const a = analyticsList[i];
+          return {
+            name: shortName(c.title),
+            enrolled: a?.enrollments_count ?? 0,
+            completed: a?.completions_count ?? 0,
+          };
+        });
+
+        setData({
+          stats: [
+            { ...MOCK_STATS[0], value: fmtNum(totalEnrollments) },
+            { ...MOCK_STATS[1], value: fmtNum(page.total) },
+            { ...MOCK_STATS[2], value: fmtNum(totalLectures) },
+            { ...MOCK_STATS[3], value: fmtMoney(totalRevenue) },
+          ],
+          overview,
+          analysis,
+          loading: false,
+        });
       } catch {
-        // keep mocks
+        setData((prev) => ({ ...prev, loading: false }));
       }
     }
     load();
@@ -55,5 +100,5 @@ export function useDashboardStats(): Stat[] {
     };
   }, []);
 
-  return stats;
+  return data;
 }

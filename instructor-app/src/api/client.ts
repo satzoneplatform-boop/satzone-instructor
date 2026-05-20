@@ -8,14 +8,6 @@ import {
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
-function isDemoSession(): boolean {
-  try {
-    return localStorage.getItem("studyq.demo") === "1";
-  } catch {
-    return false;
-  }
-}
-
 export class ApiError extends Error {
   status: number;
   code: string;
@@ -65,12 +57,6 @@ export async function api<T>(
   path: string,
   init: RequestInit & { skipAuth?: boolean; retry?: boolean } = {}
 ): Promise<T> {
-  // Demo sessions never hit the network — all calls fail fast so callers
-  // fall back to their mock data without spamming the offline backend.
-  if (isDemoSession() && !init.skipAuth) {
-    throw new ApiError(0, "demo_mode", "Demo session — backend disabled.");
-  }
-
   const { skipAuth, retry, ...fetchInit } = init;
   const headers = new Headers(fetchInit.headers);
   if (!headers.has("Content-Type") && fetchInit.body && !(fetchInit.body instanceof FormData)) {

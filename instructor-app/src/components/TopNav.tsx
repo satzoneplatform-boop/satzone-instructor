@@ -42,9 +42,6 @@ export function TopNav() {
             className="relative grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-violet-200 bg-white"
           >
             <Bell size={20} className="text-secondary" />
-            <span className="absolute -top-0.5 right-1.5 grid min-w-[12px] place-items-center rounded-full bg-danger-500 px-[3px] py-[2px] text-[8px] font-medium leading-none text-white">
-              2
-            </span>
           </button>
 
           <button
