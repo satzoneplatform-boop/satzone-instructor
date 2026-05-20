@@ -14,6 +14,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
+import { exportExcel } from "../lib/exportExcel";
 import { useToast } from "../components/Toast";
 import { deleteCourse } from "../api/courses";
 import { useCourses } from "../hooks/useCourses";
@@ -87,7 +88,24 @@ export function CoursesListPage() {
           >
             <Plus size={16} /> Add New Course
           </button>
-          <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[14px] font-medium text-secondary">
+          <button
+            onClick={() =>
+              exportExcel(
+                rows.map((r) => ({
+                  Title:       r.title,
+                  Code:        r.code,
+                  Instructor:  r.instructor.name,
+                  Enrollments: r.sale,
+                  Price:       r.price,
+                  Lessons:     r.lessons,
+                  Duration:    r.totalTime,
+                  Status:      r.status,
+                })),
+                `courses_${new Date().toISOString().slice(0, 10)}`
+              )
+            }
+            className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[14px] font-medium text-secondary hover:bg-violet-50 transition"
+          >
             <Download size={16} /> Export
           </button>
         </div>

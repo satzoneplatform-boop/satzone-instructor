@@ -14,6 +14,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
+import { exportExcel } from "../lib/exportExcel";
 import { useToast } from "../components/Toast";
 import { deleteInstructor } from "../api/admin";
 import { useTeachers } from "../hooks/useTeachers";
@@ -86,7 +87,23 @@ export function TeachersListPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[14px] font-medium text-secondary">
+          <button
+            onClick={() =>
+              exportExcel(
+                rows.map((r) => ({
+                  Name:       r.name,
+                  "User ID":  r.userId,
+                  Courses:    r.course,
+                  "Joined":   r.joinDate,
+                  Earning:    r.earning,
+                  Balance:    r.balance,
+                  Status:     r.status,
+                })),
+                `teachers_${new Date().toISOString().slice(0, 10)}`
+              )
+            }
+            className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[14px] font-medium text-secondary hover:bg-violet-50 transition"
+          >
             <Download size={16} /> Export
           </button>
           <Link

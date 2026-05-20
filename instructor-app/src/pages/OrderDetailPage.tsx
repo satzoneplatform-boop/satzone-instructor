@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Download, X } from "lucide-react";
+import { exportExcel } from "../lib/exportExcel";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { listMyOrders } from "../api/payments";
@@ -152,11 +153,30 @@ function DetailsTab({ order }: { order: OrderRead }) {
   const [billingOpen, setBillingOpen] = useState(true);
   const st = STATUS_MAP[order.status] ?? STATUS_MAP["pending"];
 
+  function onExport() {
+    exportExcel(
+      [{
+        "Order ID":   order.id,
+        Type:         order.item_kind,
+        Status:       order.status,
+        Amount:       fmtMoney(order.amount_cents, order.currency),
+        Currency:     order.currency.toUpperCase(),
+        Provider:     order.provider ?? "—",
+        "Paid At":    order.paid_at ? new Date(order.paid_at).toLocaleString() : "—",
+        "Created At": new Date(order.created_at).toLocaleString(),
+      }],
+      `order_${order.id.slice(0, 12)}`
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h3 className="text-[15px] font-semibold text-ink">Order Details</h3>
-        <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary">
+        <button
+          onClick={onExport}
+          className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary hover:bg-violet-50 transition"
+        >
           <Download size={14} /> Export
         </button>
       </div>
@@ -243,11 +263,31 @@ function CourseTab({ order, course }: { order: OrderRead; course: InstructorCour
 
   const price = fmtMoney(course.discount_price_cents ?? course.price_cents, course.currency);
 
+  function onExport() {
+    const c = course!;
+    exportExcel(
+      [{
+        "Course Title":   c.title,
+        Subtitle:         c.subtitle ?? "",
+        Level:            c.level,
+        Language:         c.language.toUpperCase(),
+        Lessons:          c.lectures_count,
+        "Duration (min)": c.duration_minutes,
+        Price:            price,
+        Status:           c.status,
+      }],
+      `order_course_${c.id.slice(0, 10)}`
+    );
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between pb-4">
         <h3 className="text-[15px] font-semibold text-ink">Course</h3>
-        <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary">
+        <button
+          onClick={onExport}
+          className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary hover:bg-violet-50 transition"
+        >
           <Download size={14} /> Export
         </button>
       </div>
@@ -292,16 +332,33 @@ function InvoiceTab({ order, course }: { order: OrderRead; course: InstructorCou
   const tax = 0;
   const discount = 0;
 
+  function onExport() {
+    exportExcel(
+      [{
+        "Invoice #":    order.id.slice(0, 12).toUpperCase(),
+        Item:           course ? course.title : order.item_kind,
+        Status:         order.status,
+        Subtotal:       fmtMoney(order.amount_cents, order.currency),
+        "Tax":          fmtMoney(tax, order.currency),
+        Discount:       fmtMoney(discount, order.currency),
+        Total:          fmtMoney(order.amount_cents, order.currency),
+        Provider:       order.provider ?? "—",
+        "Paid At":      order.paid_at ? new Date(order.paid_at).toLocaleString() : "—",
+      }],
+      `invoice_${order.id.slice(0, 12).toUpperCase()}`
+    );
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between pb-4">
         <h3 className="text-[15px] font-semibold text-ink">Invoice</h3>
         <button
           type="button"
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary"
+          onClick={onExport}
+          className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-medium text-secondary hover:bg-violet-50 transition"
         >
-          <Download size={14} /> Print / Export
+          <Download size={14} /> Export to Excel
         </button>
       </div>
 
