@@ -1,12 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import {
+  ArrowRight,
   Bold,
   ChevronDown,
   HelpCircle,
   Image as ImageIcon,
   Italic,
   Link as LinkIcon,
-  Plus,
+  Save,
   Smile,
   Underline,
   Upload,
@@ -198,9 +199,13 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-secondary/90 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
             >
-              <Plus size={16} /> {mode === "create" ? "Create" : "Save"}
+              {mode === "create" ? (
+                <><ArrowRight size={16} /> Save &amp; Continue Editing</>
+              ) : (
+                <><Save size={16} /> Save Changes</>
+              )}
             </button>
           </div>
         </div>
