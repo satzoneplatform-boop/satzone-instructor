@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, Bell, Settings, ChevronDown } from "lucide-react";
+import { Bell, Settings, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NotificationDropdown } from "./NotificationDropdown";
@@ -22,18 +22,7 @@ export function TopNav() {
   }, []);
 
   return (
-    <header className="flex items-center justify-between gap-6 p-6">
-      {/* Search */}
-      <div className="flex w-[252px] items-center gap-2 rounded-full border-[1.5px] border-violet-50 bg-white py-3 pl-3 pr-5">
-        <Search size={20} className="text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search"
-          className="flex-1 bg-transparent text-[14px] text-ink placeholder:text-slate-300 focus:outline-none"
-        />
-        <SlidersHorizontal size={20} className="text-slate-600" />
-      </div>
-
+    <header className="flex items-center justify-end gap-6 p-6">
       <div className="flex items-center gap-8" ref={wrapRef}>
         <div className="flex items-center gap-3.5">
           <button
