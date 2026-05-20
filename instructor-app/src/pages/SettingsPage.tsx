@@ -57,12 +57,13 @@ import {
   getNotificationPrefs,
   updateMe,
   updateNotificationPrefs,
-  uploadMyAvatar,
+  uploadMyAvatarWithProgress,
 } from "../api/me";
+import { CircularProgress } from "../components/CircularProgress";
 import {
   getMyInstructorProfile,
   updateMyInstructorProfile,
-  uploadMyInstructorAvatar,
+  uploadMyInstructorAvatarWithProgress,
 } from "../api/instructor";
 import type { InstructorProfileRead } from "../api/types";
 import { ApiError } from "../api/client";
@@ -166,6 +167,7 @@ function GeneralTab() {
   const [postal, setPostal] = useState("1214");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPct, setAvatarPct] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
@@ -187,9 +189,10 @@ function GeneralTab() {
   async function onPickAvatar(file: File) {
     setAvatarFile(file);
     setBusy(true);
+    setAvatarPct(0);
     setMsg(null);
     try {
-      const r = await uploadMyAvatar(file);
+      const r = await uploadMyAvatarWithProgress(file, setAvatarPct);
       setAvatarUrl(r.url);
       setAvatarFile(null);
       await refreshUser();
@@ -198,6 +201,7 @@ function GeneralTab() {
       setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Upload failed." });
     } finally {
       setBusy(false);
+      setAvatarPct(null);
     }
   }
 
@@ -238,11 +242,22 @@ function GeneralTab() {
       <TabHeader title="General Setting" />
 
       <div className="mt-4 flex items-center gap-4 border-b border-violet-50 pb-5">
-        <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-violet-50">
+        <div className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-50">
           {avatarPreview ? (
             <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
           ) : (
             <Camera size={20} className="text-slate-400" />
+          )}
+          {avatarPct !== null && (
+            <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40">
+              <CircularProgress
+                pct={avatarPct}
+                size={48}
+                strokeWidth={3}
+                trackColor="rgba(255,255,255,0.3)"
+                progressColor="#fff"
+              />
+            </div>
           )}
         </div>
         <div className="flex flex-1 items-center gap-3">
@@ -324,6 +339,7 @@ function ProfileTab() {
   const [twitter, setTwitter] = useState("");
   const [website, setWebsite] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarPct, setAvatarPct] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -349,15 +365,17 @@ function ProfileTab() {
 
   async function onPickAvatar(file: File) {
     setAvatarBusy(true);
+    setAvatarPct(0);
     setMsg(null);
     try {
-      const r = await uploadMyInstructorAvatar(file);
+      const r = await uploadMyInstructorAvatarWithProgress(file, setAvatarPct);
       setAvatarUrl(r.url);
       setMsg({ kind: "ok", text: "Profile photo updated." });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Upload failed." });
     } finally {
       setAvatarBusy(false);
+      setAvatarPct(null);
     }
   }
 
@@ -411,7 +429,18 @@ function ProfileTab() {
               <Camera size={22} className="m-auto text-slate-400" />
             )}
           </div>
-          {profile && (
+          {avatarPct !== null && (
+            <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40">
+              <CircularProgress
+                pct={avatarPct}
+                size={52}
+                strokeWidth={3}
+                trackColor="rgba(255,255,255,0.3)"
+                progressColor="#fff"
+              />
+            </div>
+          )}
+          {profile && avatarPct === null && (
             <span className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-positive-500 text-white">
               <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
                 <path d="M1 3.5L4 6.5L9 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

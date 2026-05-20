@@ -39,6 +39,7 @@ import { mintLessonPlayback } from "../api/playback";
 import type { LessonAdminRead, LessonType, SectionAdminRead } from "../api/types";
 import { ApiError } from "../api/client";
 import { HLSPlayer } from "./HLSPlayer";
+import { CircularProgress } from "./CircularProgress";
 import { cn } from "../lib/cn";
 
 type SectionWithLessons = SectionAdminRead & { lessons: LessonAdminRead[]; loaded: boolean };
@@ -751,16 +752,8 @@ function LessonCard({
           </span>
         </button>
 
-        {/* Upload progress bar (inline) */}
         {uploadProgress !== undefined && (
-          <div className="w-24">
-            <div className="h-1.5 overflow-hidden rounded-full bg-violet-100">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-          </div>
+          <CircularProgress pct={uploadProgress} size={32} strokeWidth={3} />
         )}
 
         {lesson.type === "video" && lesson.has_video && lesson.hls_status === "pending" && (
@@ -953,26 +946,19 @@ function VideoDropZone({
         </div>
       )}
 
-      {/* Upload progress */}
       {isUploading && (
-        <div className="mb-3 rounded-lg border border-violet-100 p-3">
-          <div className="flex items-center justify-between text-[12px]">
-            <span className="font-medium text-primary">
-              {uploadProgress < 100 ? `Uploading…` : "Processing…"}
+        <div className="mb-3 flex items-center gap-4 rounded-xl border border-violet-100 bg-violet-50/40 p-4">
+          <CircularProgress pct={uploadProgress!} size={64} strokeWidth={5} />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[13px] font-semibold text-ink">
+              {uploadProgress! < 100 ? "Uploading video…" : "Processing…"}
             </span>
-            <span className="text-slate-500">{uploadProgress}%</span>
+            {pendingFile && (
+              <span className="truncate text-[11px] text-slate-400">
+                {pendingFile.name} · {fmtSize(pendingFile.size)}
+              </span>
+            )}
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-violet-100">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${uploadProgress}%` }}
-            />
-          </div>
-          {pendingFile && (
-            <p className="mt-1.5 truncate text-[11px] text-slate-400">
-              {pendingFile.name} ({fmtSize(pendingFile.size)})
-            </p>
-          )}
         </div>
       )}
 

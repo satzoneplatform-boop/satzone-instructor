@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { uploadWithProgress } from "../lib/upload";
 import type {
   NotificationPreference,
   NotificationPreferenceUpdate,
@@ -16,6 +17,13 @@ export function uploadMyAvatar(file: File) {
   const fd = new FormData();
   fd.append("file", file);
   return api<UploadResponse>(`/me/avatar`, { method: "POST", body: fd });
+}
+
+export function uploadMyAvatarWithProgress(
+  file: File,
+  onProgress: (pct: number) => void
+) {
+  return uploadWithProgress<UploadResponse>("/me/avatar", file, onProgress);
 }
 
 export function deleteMyAvatar() {

@@ -10,9 +10,10 @@ import {
   getMyCourse,
   publishMyCourse,
   unpublishMyCourse,
-  uploadCoursePreviewVideo,
-  uploadCourseThumbnail,
+  uploadCoursePreviewVideoWithProgress,
+  uploadCourseThumbnailWithProgress,
 } from "../api/instructor";
+import { CircularProgress } from "../components/CircularProgress";
 import { useToast } from "../components/Toast";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -38,6 +39,8 @@ export function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [thumbPct, setThumbPct] = useState<number | null>(null);
+  const [videoPct, setVideoPct] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -86,25 +89,31 @@ export function CourseDetailPage() {
 
   async function onThumbnail(file: File) {
     if (!course) return;
+    setThumbPct(0);
     try {
-      await uploadCourseThumbnail(course.id, file);
+      await uploadCourseThumbnailWithProgress(course.id, file, setThumbPct);
       const fresh = await getMyCourse(course.id);
       setCourse(fresh);
       notify("Thumbnail updated.", "success");
     } catch (e) {
       notify(e instanceof ApiError ? e.message : "Upload failed.", "error");
+    } finally {
+      setThumbPct(null);
     }
   }
 
   async function onPreviewVideo(file: File) {
     if (!course) return;
+    setVideoPct(0);
     try {
-      await uploadCoursePreviewVideo(course.id, file);
+      await uploadCoursePreviewVideoWithProgress(course.id, file, setVideoPct);
       const fresh = await getMyCourse(course.id);
       setCourse(fresh);
       notify("Preview video uploaded.", "success");
     } catch (e) {
       notify(e instanceof ApiError ? e.message : "Upload failed.", "error");
+    } finally {
+      setVideoPct(null);
     }
   }
 
@@ -236,6 +245,8 @@ export function CourseDetailPage() {
                 course={course}
                 onThumbnail={onThumbnail}
                 onPreviewVideo={onPreviewVideo}
+                thumbPct={thumbPct}
+                videoPct={videoPct}
               />
             )}
           </div>
@@ -301,40 +312,44 @@ function MediaPanel({
   course,
   onThumbnail,
   onPreviewVideo,
+  thumbPct,
+  videoPct,
 }: {
   course: InstructorCourseRead;
   onThumbnail: (f: File) => void;
   onPreviewVideo: (f: File) => void;
+  thumbPct: number | null;
+  videoPct: number | null;
 }) {
   return (
     <div className="grid grid-cols-2 gap-4">
+      {/* Thumbnail */}
       <div className="rounded-xl border border-violet-100 p-4">
         <h3 className="text-[14px] font-semibold text-ink">Thumbnail</h3>
-        <div className="mt-3 overflow-hidden rounded-lg bg-violet-50/50">
+        <div className="relative mt-3 overflow-hidden rounded-lg bg-violet-50/50">
           {course.thumbnail_url ? (
             <img src={course.thumbnail_url} alt="" className="h-[160px] w-full object-cover" />
           ) : (
             <div className="grid h-[160px] place-items-center text-[13px] text-slate-400">No image</div>
           )}
+          {thumbPct !== null && (
+            <div className="absolute inset-0 grid place-items-center bg-black/45 rounded-lg">
+              <CircularProgress pct={thumbPct} size={72} strokeWidth={5} trackColor="rgba(255,255,255,0.25)" progressColor="#fff" />
+            </div>
+          )}
         </div>
-        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100">
-          <Upload size={14} /> {course.thumbnail_url ? "Replace" : "Upload image"}
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onThumbnail(f);
-              e.target.value = "";
-            }}
+        <label className={`mt-3 inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${thumbPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
+          <Upload size={14} /> {thumbPct !== null ? `${thumbPct}%…` : course.thumbnail_url ? "Replace" : "Upload image"}
+          <input type="file" accept="image/*" hidden disabled={thumbPct !== null}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onThumbnail(f); e.target.value = ""; }}
           />
         </label>
       </div>
 
+      {/* Preview video */}
       <div className="rounded-xl border border-violet-100 p-4">
         <h3 className="text-[14px] font-semibold text-ink">Preview video</h3>
-        <div className="mt-3 overflow-hidden rounded-lg">
+        <div className="relative mt-3 overflow-hidden rounded-lg">
           {course.has_preview_video ? (
             <HLSPlayer source={{ kind: "preview", slug: course.slug }} posterUrl={course.thumbnail_url ?? undefined} />
           ) : (
@@ -342,18 +357,16 @@ function MediaPanel({
               No preview video
             </div>
           )}
+          {videoPct !== null && (
+            <div className="absolute inset-0 grid place-items-center bg-black/45 rounded-lg">
+              <CircularProgress pct={videoPct} size={72} strokeWidth={5} trackColor="rgba(255,255,255,0.25)" progressColor="#fff" />
+            </div>
+          )}
         </div>
-        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100">
-          <Upload size={14} /> {course.has_preview_video ? "Replace" : "Upload video"}
-          <input
-            type="file"
-            accept="video/*"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onPreviewVideo(f);
-              e.target.value = "";
-            }}
+        <label className={`mt-3 inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${videoPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
+          <Upload size={14} /> {videoPct !== null ? `${videoPct}%…` : course.has_preview_video ? "Replace" : "Upload video"}
+          <input type="file" accept="video/*" hidden disabled={videoPct !== null}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onPreviewVideo(f); e.target.value = ""; }}
           />
         </label>
       </div>

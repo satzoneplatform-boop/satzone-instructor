@@ -1,5 +1,6 @@
 import { api } from "./client";
 import { getAccessToken } from "./tokens";
+import { uploadWithProgress } from "../lib/upload";
 import type {
   AssessmentCreate,
   AssessmentInstructorRead,
@@ -109,8 +110,39 @@ export function uploadCourseThumbnail(courseId: string, file: File) {
   return uploadFile<UploadResponse>(`/instructor/courses/${courseId}/thumbnail`, file);
 }
 
+export function uploadCourseThumbnailWithProgress(
+  courseId: string,
+  file: File,
+  onProgress: (pct: number) => void
+) {
+  return uploadWithProgress<UploadResponse>(
+    `/instructor/courses/${courseId}/thumbnail`,
+    file,
+    onProgress
+  );
+}
+
 export function uploadCoursePreviewVideo(courseId: string, file: File) {
   return uploadFile<UploadResponse>(`/instructor/courses/${courseId}/preview-video`, file);
+}
+
+export function uploadCoursePreviewVideoWithProgress(
+  courseId: string,
+  file: File,
+  onProgress: (pct: number) => void
+) {
+  return uploadWithProgress<UploadResponse>(
+    `/instructor/courses/${courseId}/preview-video`,
+    file,
+    onProgress
+  );
+}
+
+export function uploadMyInstructorAvatarWithProgress(
+  file: File,
+  onProgress: (pct: number) => void
+) {
+  return uploadWithProgress<UploadResponse>("/instructor/me/profile/avatar", file, onProgress);
 }
 
 // ============= Sections =============
