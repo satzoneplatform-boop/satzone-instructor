@@ -3,15 +3,15 @@ import {
   Search,
   SlidersHorizontal,
   Download,
-  Plus,
   ArrowDownUp,
   Eye,
   Pencil,
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Plus,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { useToast } from "../components/Toast";
@@ -35,6 +35,8 @@ export function CoursesListPage() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [toDelete, setToDelete] = useState<CourseRow | null>(null);
+  const [sortCol, setSortCol] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
   const { rows, total, loading, reload } = useCourses(page, 20);
   const nav = useNavigate();
   const { notify } = useToast();
@@ -42,6 +44,34 @@ export function CoursesListPage() {
   const filtered = rows.filter((r) =>
     r.title.toLowerCase().includes(query.trim().toLowerCase())
   );
+
+  function handleSort(label: string) {
+    if (sortCol !== label) { setSortCol(label); setSortDir("asc"); }
+    else if (sortDir === "asc") setSortDir("desc");
+    else { setSortCol(null); setSortDir(null); }
+  }
+
+  function getSortVal(r: CourseRow, col: string): string | number {
+    switch (col) {
+      case "Course Name": return r.title;
+      case "Instructor":  return r.instructor.name;
+      case "Sale":        return parseFloat(String(r.sale).replace(/[^0-9.]/g, "")) || 0;
+      case "Price":       return parseFloat(String(r.price).replace(/[^0-9.]/g, "")) || 0;
+      case "Lessons":     return Number(r.lessons) || 0;
+      case "Total Time":  return r.totalTime;
+      case "Status":      return r.status;
+      default:            return "";
+    }
+  }
+
+  const displayed = sortCol && sortDir
+    ? [...filtered].sort((a, b) => {
+        const va = getSortVal(a, sortCol);
+        const vb = getSortVal(b, sortCol);
+        const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb));
+        return sortDir === "asc" ? cmp : -cmp;
+      })
+    : filtered;
 
   return (
     <AppShell>
@@ -51,15 +81,15 @@ export function CoursesListPage() {
           <p className="mt-1 text-[14px] text-slate-600">Let's check your update today</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => nav("/courses/new")}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600"
+          >
+            <Plus size={16} /> Add New Course
+          </button>
           <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[14px] font-medium text-secondary">
             <Download size={16} /> Export
           </button>
-          <Link
-            to="/courses/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-secondary/90"
-          >
-            <Plus size={16} /> Add Course
-          </Link>
         </div>
       </div>
 
@@ -89,17 +119,32 @@ export function CoursesListPage() {
           <thead>
             <tr className="border-b border-violet-50 text-left">
               {COLS.map((c) => (
-                <th key={c.label} className="py-3 text-[13px] font-medium text-slate-600">
+                <th
+                  key={c.label}
+                  className={cn("py-3 text-[13px] font-medium text-slate-600", c.sortable && "cursor-pointer select-none")}
+                  onClick={c.sortable ? () => handleSort(c.label) : undefined}
+                >
                   <span className="inline-flex items-center gap-1.5">
                     {c.label}
-                    {c.sortable && <ArrowDownUp size={12} className="text-slate-400" />}
+                    {c.sortable && (
+                      <ArrowDownUp
+                        size={12}
+                        className={
+                          sortCol === c.label && sortDir === "asc"
+                            ? "text-blue-500"
+                            : sortCol === c.label && sortDir === "desc"
+                            ? "text-amber-500"
+                            : "text-slate-400"
+                        }
+                      />
+                    )}
                   </span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map((r) => (
+            {displayed.map((r) => (
               <Row
                 key={r.id}
                 r={r}
@@ -108,7 +153,7 @@ export function CoursesListPage() {
                 onDelete={() => setToDelete(r)}
               />
             ))}
-            {filtered.length === 0 && (
+            {displayed.length === 0 && (
               <tr>
                 <td colSpan={COLS.length} className="py-10 text-center text-[13px] text-slate-400">
                   {loading ? "Loading…" : "No courses found."}
@@ -120,7 +165,7 @@ export function CoursesListPage() {
 
         <div className="flex items-center justify-between pt-4">
           <span className="text-[13px] text-slate-600">
-            Showing 1 to {Math.min(filtered.length, 10)} of {total} results
+            Showing 1 to {Math.min(displayed.length, 10)} of {total} results
           </span>
           <Pager page={page} totalPages={Math.max(1, Math.ceil(total / 20))} onChange={setPage} />
         </div>

@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { ArrowDownUp, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { type Txn } from "../data/mock";
 import { cn } from "../lib/cn";
+
+const PAGE_SIZE = 10;
 
 const COLUMNS = [
   { label: "Customer Name", sortable: true, width: "w-[194px]" },
@@ -12,6 +15,48 @@ const COLUMNS = [
 ];
 
 export function TransactionTable({ rows, loading }: { rows: Txn[]; loading?: boolean }) {
+  const [sortCol, setSortCol] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc" | null>(null);
+  const [page, setPage] = useState(1);
+
+  function handleSort(label: string) {
+    if (sortCol !== label) { setSortCol(label); setSortDir("asc"); }
+    else if (sortDir === "asc") setSortDir("desc");
+    else { setSortCol(null); setSortDir(null); }
+  }
+
+  function getSortVal(t: Txn, col: string): string | number {
+    switch (col) {
+      case "Customer Name":   return t.name;
+      case "Course":          return t.course;
+      case "Price":           return parseFloat(String(t.price).replace(/[^0-9.]/g, "")) || 0;
+      case "Payment Methods": return t.method;
+      case "Status":          return t.status;
+      default:                return "";
+    }
+  }
+
+  const sorted = sortCol && sortDir
+    ? [...rows].sort((a, b) => {
+        const va = getSortVal(a, sortCol);
+        const vb = getSortVal(b, sortCol);
+        const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb));
+        return sortDir === "asc" ? cmp : -cmp;
+      })
+    : rows;
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageRows = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const showFrom = sorted.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const showTo = Math.min(safePage * PAGE_SIZE, sorted.length);
+
+  function changePage(p: number) {
+    setPage(Math.max(1, Math.min(totalPages, p)));
+  }
+
+  const pages = makePageRange(safePage, totalPages);
+
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between pb-2">
@@ -31,52 +76,95 @@ export function TransactionTable({ rows, loading }: { rows: Txn[]; loading?: boo
                 key={col.label}
                 className={cn(
                   "py-3 text-[14px] font-medium text-slate-600",
-                  col.width
+                  col.width,
+                  col.sortable && "cursor-pointer select-none"
                 )}
+                onClick={col.sortable ? () => handleSort(col.label) : undefined}
               >
                 <span className="inline-flex items-center gap-2">
                   {col.label}
-                  {col.sortable && <ArrowDownUp size={14} className="text-slate-400" />}
+                  {col.sortable && (
+                    <ArrowDownUp
+                      size={14}
+                      className={
+                        sortCol === col.label && sortDir === "asc"
+                          ? "text-blue-500"
+                          : sortCol === col.label && sortDir === "desc"
+                          ? "text-amber-500"
+                          : "text-slate-400"
+                      }
+                    />
+                  )}
                 </span>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((t) => (
+          {pageRows.map((t) => (
             <Row key={t.id} t={t} />
           ))}
+          {pageRows.length === 0 && (
+            <tr>
+              <td colSpan={COLUMNS.length} className="py-10 text-center text-[13px] text-slate-400">
+                {loading ? "Loading…" : "No transactions found."}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
 
       <div className="flex items-center justify-between pt-4">
         <span className="text-[13px] text-slate-600">
-          Showing 1 to 10 of 97 results
+          Showing {showFrom} to {showTo} of {sorted.length} results
         </span>
         <nav className="flex items-center gap-1">
-          <button className="grid h-7 w-7 place-items-center rounded text-slate-600 hover:bg-violet-50">
+          <button
+            onClick={() => changePage(safePage - 1)}
+            disabled={safePage === 1}
+            className="grid h-7 w-7 place-items-center rounded text-slate-600 hover:bg-violet-50 disabled:opacity-40"
+          >
             <ChevronLeft size={16} />
           </button>
-          {["1", "2", "3", "4", "...", "20", "21"].map((p, i) => (
-            <button
-              key={i}
-              className={cn(
-                "grid h-7 min-w-[28px] place-items-center rounded px-2 text-[13px]",
-                p === "2"
-                  ? "bg-primary font-medium text-white"
-                  : "text-slate-600 hover:bg-violet-50"
-              )}
-            >
-              {p}
-            </button>
-          ))}
-          <button className="grid h-7 w-7 place-items-center rounded text-slate-600 hover:bg-violet-50">
+          {pages.map((p, i) =>
+            p === "..." ? (
+              <span key={i} className="px-1 text-slate-400">…</span>
+            ) : (
+              <button
+                key={i}
+                onClick={() => changePage(p as number)}
+                className={cn(
+                  "grid h-7 min-w-[28px] place-items-center rounded px-2 text-[13px]",
+                  p === safePage
+                    ? "bg-primary font-medium text-white"
+                    : "text-slate-600 hover:bg-violet-50"
+                )}
+              >
+                {p}
+              </button>
+            )
+          )}
+          <button
+            onClick={() => changePage(safePage + 1)}
+            disabled={safePage === totalPages}
+            className="grid h-7 w-7 place-items-center rounded text-slate-600 hover:bg-violet-50 disabled:opacity-40"
+          >
             <ChevronRight size={16} />
           </button>
         </nav>
       </div>
     </section>
   );
+}
+
+function makePageRange(cur: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const out: (number | "...")[] = [1];
+  if (cur > 3) out.push("...");
+  for (let p = Math.max(2, cur - 1); p <= Math.min(total - 1, cur + 1); p++) out.push(p);
+  if (cur < total - 2) out.push("...");
+  out.push(total);
+  return out;
 }
 
 const CARD_LOGO: Record<Txn["method"], string> = {

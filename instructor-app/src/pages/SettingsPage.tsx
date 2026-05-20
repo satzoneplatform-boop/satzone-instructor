@@ -54,11 +54,13 @@ import { AppShell } from "../components/AppShell";
 import { useAuth } from "../auth/AuthContext";
 import {
   changePassword,
+  deleteMyAvatar,
   getNotificationPrefs,
   getOnboarding,
   updateMe,
   updateNotificationPrefs,
   updateOnboarding,
+  uploadMyAvatar,
 } from "../api/me";
 import { ApiError } from "../api/client";
 import { cn } from "../lib/cn";
@@ -140,7 +142,7 @@ export function SettingsPage() {
 /* ============ General ============ */
 
 function GeneralTab() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -169,6 +171,39 @@ function GeneralTab() {
     return avatarUrl;
   }, [avatarFile, avatarUrl]);
 
+  async function onPickAvatar(file: File) {
+    setAvatarFile(file);
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await uploadMyAvatar(file);
+      setAvatarUrl(r.url);
+      setAvatarFile(null);
+      await refreshUser();
+      setMsg({ kind: "ok", text: "Avatar uploaded." });
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Upload failed." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDeleteAvatar() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await deleteMyAvatar();
+      setAvatarFile(null);
+      setAvatarUrl("");
+      await refreshUser();
+      setMsg({ kind: "ok", text: "Avatar removed." });
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not delete." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -176,6 +211,7 @@ function GeneralTab() {
     try {
       const full_name = [firstName, lastName].filter(Boolean).join(" ").trim();
       await updateMe({ full_name });
+      await refreshUser();
       setMsg({ kind: "ok", text: "Saved." });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not save." });
@@ -201,23 +237,24 @@ function GeneralTab() {
             We only support .JPG, .JPEG, or .PNG file.
           </span>
           <label className="ml-auto cursor-pointer rounded-lg bg-violet-50 px-4 py-2 text-[13px] font-medium text-primary hover:bg-violet-100">
-            Upload Photo
+            {busy ? "Uploading…" : "Upload Photo"}
             <input
               type="file"
               accept="image/*"
               hidden
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setAvatarFile(e.target.files?.[0] ?? null)
-              }
+              disabled={busy}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const f = e.target.files?.[0];
+                if (f) void onPickAvatar(f);
+                e.target.value = "";
+              }}
             />
           </label>
           <button
             type="button"
-            onClick={() => {
-              setAvatarFile(null);
-              setAvatarUrl("");
-            }}
-            className="text-[13px] font-medium text-danger-500"
+            onClick={onDeleteAvatar}
+            disabled={busy || !avatarUrl}
+            className="text-[13px] font-medium text-danger-500 disabled:opacity-50"
           >
             Delete Photo
           </button>

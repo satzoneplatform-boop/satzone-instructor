@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 import { Camera, ChevronDown, Plus, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
+import { getInstructor } from "../api/admin";
 import {
-  createInstructor,
-  getInstructor,
-  updateInstructor,
-  uploadInstructorAvatar,
-} from "../api/admin";
+  getMyInstructorProfile,
+  updateMyInstructorProfile,
+  uploadMyInstructorAvatar,
+} from "../api/instructor";
+import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../api/client";
 import { cn } from "../lib/cn";
 
@@ -44,21 +45,54 @@ const COUNTRIES = ["Bangladesh", "United States", "United Kingdom", "India", "Pa
 export function TeacherFormPage({ mode }: { mode: "create" | "edit" }) {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
+  const { user } = useAuth();
   const [form, setForm] = useState<Form>(EMPTY);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(mode === "edit");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSelf, setIsSelf] = useState(false);
 
   const title = mode === "create" ? "Add Teachers" : form.name || "Edit Teacher";
   const submitLabel = mode === "create" ? "Add" : "Update";
 
+  // For an instructor account, editing teachers means editing your own profile.
+  // We first try `/instructor/me/profile`; if its id matches the route, this
+  // is self-edit. Otherwise fall back to the public read (read-only — admin
+  // editing of other instructors will 403).
   useEffect(() => {
     if (mode !== "edit" || !id) return;
     let mounted = true;
     setLoading(true);
-    getInstructor(id)
-      .then((it) => {
+
+    async function load() {
+      try {
+        const me = await getMyInstructorProfile();
+        if (!mounted) return;
+        if (me.id === id) {
+          setIsSelf(true);
+          setForm({
+            name: me.name,
+            designation: me.title ?? "",
+            email: user?.email ?? "",
+            phone: user?.phone_number ?? "",
+            country: "",
+            city: "",
+            address: me.bio ?? "",
+            postalCode: "",
+            userId: `#${me.slug.slice(0, 8).toUpperCase()}`,
+            status: "active",
+            avatarUrl: me.avatar_url ?? "",
+          });
+          setLoading(false);
+          return;
+        }
+      } catch {
+        /* not yet provisioned, fall through */
+      }
+
+      try {
+        const it = await getInstructor(id!);
         if (!mounted) return;
         setForm({
           name: it.name,
@@ -67,34 +101,24 @@ export function TeacherFormPage({ mode }: { mode: "create" | "edit" }) {
           phone: "",
           country: "",
           city: "",
-          address: "",
+          address: it.bio ?? "",
           postalCode: "",
           userId: `#${it.slug.slice(0, 8).toUpperCase()}`,
           status: "active",
           avatarUrl: it.avatar_url ?? "",
         });
-      })
-      .catch(() => {
-        // mock fallback — pre-fill with Osama Richard for the visual reference
-        setForm({
-          ...EMPTY,
-          name: "Osama Richard",
-          designation: "User Interface Designer",
-          email: "osamarichard@gmail.com",
-          phone: "+1 707 797 0469",
-          country: "Bangladesh",
-          city: "Dhaka",
-          address: "Mirpur-10, Dhaka 1231, Bangladesh",
-          postalCode: "1231",
-          userId: "#OS4524114",
-          avatarUrl: "https://i.pravatar.cc/120?img=12",
-        });
-      })
-      .finally(() => mounted && setLoading(false));
+      } catch (e) {
+        if (mounted) setError(e instanceof ApiError ? e.message : "Could not load.");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    void load();
     return () => {
       mounted = false;
     };
-  }, [id, mode]);
+  }, [id, mode, user?.email, user?.phone_number]);
 
   const avatarPreview = useMemo(() => {
     if (avatarFile) return URL.createObjectURL(avatarFile);
@@ -117,34 +141,28 @@ export function TeacherFormPage({ mode }: { mode: "create" | "edit" }) {
       setError("Name is required.");
       return;
     }
+    if (mode === "create") {
+      setError("Only admins can create new instructor profiles. Edit yours instead.");
+      return;
+    }
+    if (!isSelf) {
+      setError("Only admins can edit another instructor's profile.");
+      return;
+    }
     setSubmitting(true);
     try {
-      const payload = {
+      await updateMyInstructorProfile({
         name: form.name,
         title: form.designation || undefined,
-        // Email/phone/address/etc. aren't part of AdminInstructorRead;
-        // they'd map to a separate User record. For now we store designation only.
-      };
-      let savedId: string;
-      if (mode === "create") {
-        const created = await createInstructor(payload);
-        savedId = created.id;
-      } else if (id) {
-        const upd = await updateInstructor(id, payload);
-        savedId = upd.id;
-      } else {
-        throw new Error("Missing id");
-      }
+        bio: form.address || undefined,
+      });
       if (avatarFile) {
-        await uploadInstructorAvatar(savedId, avatarFile).catch(() => {});
+        await uploadMyInstructorAvatar(avatarFile).catch(() => {});
       }
       nav("/teachers");
     } catch (e) {
-      if (e instanceof ApiError) {
-        setError(e.message);
-      } else {
-        setError("Could not save. Is the backend running?");
-      }
+      if (e instanceof ApiError) setError(e.message);
+      else setError("Could not save.");
     } finally {
       setSubmitting(false);
     }

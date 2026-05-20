@@ -2,8 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/Toast";
-import { DemoBanner } from "./components/DemoBanner";
-
 // Auth flow
 import { SignInPage } from "./pages/SignInPage";
 import { SignUpPage } from "./pages/SignUpPage";
@@ -38,7 +36,6 @@ export default function App() {
       <ToastProvider>
         <AuthProvider>
           <BrowserRouter>
-            <DemoBanner />
             <AppRoutes />
           </BrowserRouter>
         </AuthProvider>
@@ -86,9 +83,7 @@ function AppRoutes() {
 
       {/* Stubs for sidebar items that don't have detailed designs yet */}
       <Route path="/resource" element={<AuthGate mode="authed"><PlaceholderPage title="Resource" /></AuthGate>} />
-      <Route path="/certificate" element={<AuthGate mode="authed"><PlaceholderPage title="Certificates" /></AuthGate>} />
       <Route path="/chat" element={<AuthGate mode="authed"><PlaceholderPage title="Chat" /></AuthGate>} />
-      <Route path="/pages" element={<AuthGate mode="authed"><PlaceholderPage title="App Pages" /></AuthGate>} />
       <Route path="/authentication" element={<AuthGate mode="authed"><PlaceholderPage title="Authentication" description="The auth screens live under /sign-in, /sign-up, /forgot-password, /reset-password, /verify-code." /></AuthGate>} />
       <Route path="/support" element={<AuthGate mode="authed"><PlaceholderPage title="Support" /></AuthGate>} />
 
@@ -102,11 +97,15 @@ function AppRoutes() {
 }
 
 function AuthGate({ mode, children }: { mode: "anon" | "authed"; children: React.ReactNode }) {
-  const { status } = useAuth();
+  const { status, needsPhoneVerify } = useAuth();
   if (status === "loading") {
     return <div className="grid min-h-screen place-items-center text-slate-600">Loading…</div>;
   }
   if (mode === "authed" && status !== "authed") return <Navigate to="/sign-in" replace />;
   if (mode === "anon" && status === "authed") return <Navigate to="/" replace />;
+  // Phone-verify gate: any authed route blocks on this; the verify page itself
+  // is reachable via its own route (mounted outside this gate) so the user can
+  // complete the flow.
+  if (mode === "authed" && needsPhoneVerify) return <Navigate to="/verify-code" replace />;
   return <>{children}</>;
 }

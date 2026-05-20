@@ -63,3 +63,10 @@ export function verifyPhoneCode(code: string) {
 export function resendPhoneCode() {
   return api<{ message: string }>("/auth/resend-phone-code", { method: "POST" });
 }
+
+export function submitPhoneNumber(phone_number: string) {
+  return api<{ message: string }>("/auth/phone", {
+    method: "POST",
+    body: JSON.stringify({ phone_number }),
+  });
+}
