@@ -27,7 +27,6 @@ import { SettingsPage } from "./pages/SettingsPage";
 
 // Status pages
 import { GenericErrorPage, MaintenancePage, NotFoundPage } from "./pages/ErrorPages";
-import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { ContactsPage } from "./pages/ContactsPage";
 
 export default function App() {
@@ -82,7 +81,6 @@ function AppRoutes() {
 
       {/* Stubs for sidebar items that don't have detailed designs yet */}
       <Route path="/contacts" element={<AuthGate mode="authed"><ContactsPage /></AuthGate>} />
-      <Route path="/chat" element={<AuthGate mode="authed"><PlaceholderPage title="Chat" /></AuthGate>} />
 
       {/* Status pages */}
       <Route path="/error" element={<AuthGate mode="authed"><GenericErrorPage /></AuthGate>} />

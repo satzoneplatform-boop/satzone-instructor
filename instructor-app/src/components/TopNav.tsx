@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, Bell, MessageSquare, Settings, ChevronDown } from "lucide-react";
+import { Search, SlidersHorizontal, Bell, Settings, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NotificationDropdown } from "./NotificationDropdown";
@@ -45,16 +45,7 @@ export function TopNav() {
             <Bell size={20} className="text-secondary" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => nav("/chat")}
-            className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-violet-200 bg-white transition hover:bg-violet-50"
-            aria-label="Chat"
-          >
-            <MessageSquare size={20} className="text-secondary" />
-          </button>
-
-          <button
+<button
             type="button"
             onClick={() => nav("/settings")}
             className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-violet-200 bg-white transition hover:bg-violet-50"

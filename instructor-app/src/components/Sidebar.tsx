@@ -4,7 +4,6 @@ import {
   ClipboardList,
   GraduationCap,
   LayoutGrid,
-  MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
   PhoneCall,
@@ -18,7 +17,6 @@ const MENU = [
   { icon: GraduationCap, label: "Teachers",    to: "/teachers",      match: (p: string) => p.startsWith("/teachers") },
   { icon: Users,         label: "Students",    to: "/students",      match: (p: string) => p.startsWith("/students") },
   { icon: BookOpen,      label: "Course",      to: "/courses",       match: (p: string) => p.startsWith("/courses") },
-  { icon: MessageSquare, label: "Chat",        to: "/chat" },
   { icon: ClipboardList, label: "Transaction", to: "/transactions" },
   { icon: PhoneCall,     label: "Contacts",    to: "/contacts",      match: (p: string) => p.startsWith("/contacts") },
 ];
