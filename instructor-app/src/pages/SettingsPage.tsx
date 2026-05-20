@@ -3,17 +3,14 @@ import {
   Briefcase,
   Camera,
   ChevronDown,
-  ChevronRight,
   Eye,
   EyeOff,
   Globe,
-  Link2,
   Lock,
   Mail,
   MapPin,
   Phone,
   Plus,
-  Search,
   Settings,
   ShieldCheck,
   User,
@@ -57,10 +54,8 @@ import {
   changePassword,
   deleteMyAvatar,
   getNotificationPrefs,
-  getOnboarding,
   updateMe,
   updateNotificationPrefs,
-  updateOnboarding,
   uploadMyAvatar,
 } from "../api/me";
 import {
@@ -72,14 +67,11 @@ import type { InstructorProfileRead } from "../api/types";
 import { ApiError } from "../api/client";
 import { cn } from "../lib/cn";
 
-type TabKey = "general" | "profile" | "linking" | "social" | "security";
+type TabKey = "general" | "security";
 
 const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; sub: string }[] = [
-  { key: "general",  label: "General",      icon: Settings,    sub: "Name, avatar & address" },
-  { key: "profile",  label: "Profile",      icon: Briefcase,   sub: "Public instructor page" },
-  { key: "linking",  label: "Linking",      icon: Link2,       sub: "Linked accounts & language" },
-  { key: "social",   label: "Social Links", icon: Globe,       sub: "Facebook, Twitter & more" },
-  { key: "security", label: "Security",     icon: ShieldCheck, sub: "Password & notifications" },
+  { key: "general",  label: "General",  icon: Settings,    sub: "Profile, info & social links" },
+  { key: "security", label: "Security", icon: ShieldCheck, sub: "Password & notifications" },
 ];
 
 export function SettingsPage() {
@@ -133,14 +125,27 @@ export function SettingsPage() {
         </aside>
 
         <section className="rounded-2xl bg-white p-6 shadow-sm">
-          {tab === "general"  && <GeneralTab />}
-          {tab === "profile"  && <ProfileTab />}
-          {tab === "linking"  && <LinkingTab />}
-          {tab === "social"   && <SocialLinksTab />}
+          {tab === "general"  && <CombinedGeneralTab />}
           {tab === "security" && <SecurityTab />}
         </section>
       </div>
     </AppShell>
+  );
+}
+
+/* ============ Combined General tab ============ */
+
+function CombinedGeneralTab() {
+  return (
+    <div className="flex flex-col gap-8">
+      <GeneralTab />
+      <div className="border-t border-violet-50 pt-6">
+        <ProfileTab />
+      </div>
+      <div className="border-t border-violet-50 pt-6">
+        <SocialLinksTab />
+      </div>
+    </div>
   );
 }
 
@@ -297,7 +302,7 @@ function GeneralTab() {
         </Field>
       </div>
 
-      <ActionRow msg={msg} busy={busy} saveLabel="Public" />
+      <ActionRow msg={msg} busy={busy} saveLabel="Save" />
     </form>
   );
 }
@@ -519,148 +524,9 @@ function ProfileTab() {
 }
 
 
-const LANGUAGES = [
-  { code: "en-US", label: "English (USA)", flag: "🇺🇸" },
-  { code: "en-GB", label: "English (GBR)", flag: "🇬🇧" },
-  { code: "fr",    label: "France (FR)",   flag: "🇫🇷" },
-  { code: "es",    label: "Spain (ES)",    flag: "🇪🇸" },
-  { code: "it",    label: "Italy (IT)",    flag: "🇮🇹" },
-  { code: "gr",    label: "Greece (GR)",   flag: "🇬🇷" },
-  { code: "sg",    label: "Singapore (SG)", flag: "🇸🇬" },
-  { code: "nl",    label: "Netherlands (NL)", flag: "🇳🇱" },
-  { code: "in",    label: "India (IN)",    flag: "🇮🇳" },
-];
 
 
-/* ============ Linking (Language + OAuth) ============ */
 
-function LinkingTab() {
-  return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <TabHeader title="Language" subtitle="Choose the interface language for your dashboard" />
-        <div className="mt-4">
-          <LanguagesInner />
-        </div>
-      </div>
-
-      <div className="border-t border-violet-50 pt-6">
-        <TabHeader title="Connected Accounts" subtitle="External accounts linked to your IdrokHub profile" />
-        <div className="mt-4 flex items-center gap-4 rounded-xl border border-violet-100 p-4">
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-sm">
-            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
-              <path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
-              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
-              <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.68 9c0-.593.102-1.17.284-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" />
-              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <p className="text-[14px] font-medium text-ink">Google</p>
-            <p className="text-[12px] text-slate-400">Link your Google account for one-click sign-in</p>
-          </div>
-          <span className="rounded-md bg-violet-50 px-3 py-1 text-[12px] font-medium text-primary">
-            Managed by OAuth
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LanguagesInner() {
-  const [selected, setSelected] = useState("en-US");
-  const [query, setQuery] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-
-  useEffect(() => {
-    getOnboarding()
-      .then((o) => {
-        const locale = o.profile?.locale;
-        if (!locale) return;
-        const hit = LANGUAGES.find((l) => l.code === locale || l.code.startsWith(locale));
-        if (hit) setSelected(hit.code);
-      })
-      .catch(() => {});
-  }, []);
-
-  const filtered = LANGUAGES.filter((l) =>
-    l.label.toLowerCase().includes(query.trim().toLowerCase())
-  );
-
-  async function save() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      await updateOnboarding({ locale: selected.split("-")[0] || selected });
-      setMsg({ kind: "ok", text: "Language saved." });
-    } catch (e) {
-      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not save." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 rounded-full border-[1.5px] border-violet-50 bg-white px-3 py-2.5">
-        <Search size={16} className="text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search language…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 bg-transparent text-[13px] text-ink placeholder:text-slate-300 focus:outline-none"
-        />
-      </div>
-
-      <ul className="max-h-[280px] divide-y divide-violet-50 overflow-y-auto">
-        {filtered.map((l) => {
-          const active = selected === l.code;
-          return (
-            <li key={l.code}>
-              <button
-                type="button"
-                onClick={() => setSelected(l.code)}
-                className={cn(
-                  "flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition",
-                  active ? "rounded-lg bg-violet-50" : "hover:bg-violet-50/60"
-                )}
-              >
-                <span className="inline-flex items-center gap-3">
-                  <span className="text-[18px] leading-none">{l.flag}</span>
-                  <span className="text-[14px] text-secondary">{l.label}</span>
-                </span>
-                {active ? (
-                  <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-white">
-                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                      <path d="M1 3.5L4 6.5L9 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                ) : (
-                  <ChevronRight size={14} className="text-slate-300" />
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="flex items-center gap-4 pt-2">
-        <button
-          type="button"
-          onClick={save}
-          disabled={busy}
-          className="rounded-lg bg-primary px-6 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
-        >
-          {busy ? "Saving…" : "Save Language"}
-        </button>
-        {msg && <FormMessage msg={msg} />}
-      </div>
-    </div>
-  );
-}
 
 /* ============ Social Links ============ */
 
