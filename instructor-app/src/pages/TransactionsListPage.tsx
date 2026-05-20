@@ -6,12 +6,11 @@ import {
   Download,
   Eye,
   Pencil,
-  Plus,
   Search,
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { exportExcel } from "../lib/exportExcel";
@@ -101,12 +100,6 @@ export function TransactionsListPage() {
           >
             <Download size={16} /> Export
           </button>
-          <Link
-            to="/transactions/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-secondary/90"
-          >
-            <Plus size={16} /> Add Transaction
-          </Link>
         </div>
       </div>
 
