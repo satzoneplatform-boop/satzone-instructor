@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import {
   Search,
-  SlidersHorizontal,
   Download,
   ArrowDownUp,
   Eye,
@@ -122,12 +121,10 @@ export function TeachersListPage() {
             />
           </div>
           <div className="flex items-center gap-3">
-            <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-2 text-[13px] font-medium text-secondary">
-              <SlidersHorizontal size={16} /> Filters
-            </button>
-            <button className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-2 text-[13px] font-medium text-secondary">
-              <ArrowDownUp size={16} /> Apr 11, Apr 24
-            </button>
+            <span className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-3 py-2 text-[13px] font-medium text-secondary">
+              <ArrowDownUp size={16} />
+              {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </span>
           </div>
         </div>
 
