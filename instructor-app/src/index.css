@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* Geist — satzone.dev's font, loaded from local node_modules */
+@import '@fontsource/geist/400.css';
+@import '@fontsource/geist/500.css';
+@import '@fontsource/geist/600.css';
+@import '@fontsource/geist/700.css';
 
 @tailwind base;
 @tailwind components;
@@ -10,9 +14,9 @@ html, body, #root {
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, sans-serif;
-  background: #F5F3FF;
-  color: #000929;
+  font-family: 'Geist', 'Inter', system-ui, sans-serif;
+  background: #f8fafc;   /* satzone ink-50 — replaces previous violet-50 bg */
+  color: #0f172b;         /* satzone ink-900 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

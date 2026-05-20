@@ -4,39 +4,62 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#8247FF",
-        secondary: "#100A55",
-        ink: "#000929",
+        // ─── satzone.dev brand palette (primary = brand-500) ───────────────
+        primary:   "#615fff",   // satzone brand-500
+        secondary: "#314158",   // satzone ink-700  (main body/ui text)
+        ink:       "#0f172b",   // satzone ink-900  (headings / darkest text)
+
+        // violet tokens — map to satzone brand scale so all violet-* classes
+        // automatically pick up the new palette throughout the codebase
         violet: {
-          50: "#F5F3FF",
-          100: "#EDE9FE",
-          200: "#DDD6FE",
-          300: "#C4B5FD",
-          400: "#A78BFA",
-          500: "#8B5CF6",
-          600: "#7C3AED",
+          50:  "#eef0ff",   // brand-50
+          100: "#e0e1ff",   // brand-100
+          200: "#c5c5ff",   // brand-200
+          300: "#a3b3ff",   // brand-300
+          400: "#7c86ff",   // brand-400
+          500: "#615fff",   // brand-500
+          600: "#4f39f6",   // brand-600
         },
+
+        // slate tokens — map to satzone ink scale
         slate: {
-          50: "#F8FAFC",
-          100: "#F1F5F9",
-          200: "#E2E8F0",
-          300: "#CBD5E1",
-          400: "#94A3B8",
-          500: "#64748B",
-          600: "#475569",
-          700: "#334155",
+          50:  "#f8fafc",   // ink-50  (page background)
+          100: "#f1f5f9",   // ink-100
+          200: "#dde3eb",   // ink-200
+          300: "#cad5e2",   // ink-300
+          400: "#90a1b9",   // ink-400
+          500: "#62748e",   // ink-500
+          600: "#45556c",   // ink-600
+          700: "#314158",   // ink-700
         },
-        positive: { 50: "#F0FDF4", 100: "#DCFCE7", 500: "#22C55E", 600: "#16A34A" },
-        danger: { 50: "#FEF2F2", 100: "#FEE2E2", 500: "#EF4444" },
-        warn: { 50: "#FEFCE8", 500: "#FCDD08" },
-        sky: { 50: "#EFF6FF" },
+
+        // Semantic status colours matching satzone's success/danger/warn
+        positive: {
+          50:  "#ecfdf3",
+          100: "#ecfdf3",
+          500: "#22c55e",   // success-500
+          600: "#049228",   // success-600
+        },
+        danger: {
+          50:  "#fdf4f3",
+          100: "#fdf4f3",
+          500: "#d54033",   // danger-500
+        },
+        warn: {
+          50:  "#fffbeb",
+          500: "#f59e0b",   // warn-500 (amber, not yellow)
+        },
+        sky: { 50: "#eff6ff" },
       },
+
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ["Geist", "Inter", "system-ui", "sans-serif"],
       },
+
       boxShadow: {
-        card: "0 2px 4px -1px rgba(0,0,0,0.06), 0 4px 6px -1px rgba(0,0,0,0.10)",
-        dropdown: "0 10px 30px -5px rgba(16,10,85,0.18), 0 4px 12px -2px rgba(16,10,85,0.08)",
+        // satzone card and dropdown shadows
+        card:     "0 1px 2px 0 rgba(15,23,43,0.04), 0 1px 3px 0 rgba(15,23,43,0.05)",
+        dropdown: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(15,23,43,0.10)",
       },
     },
   },
