@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
+  Bell,
   Briefcase,
   Camera,
   ChevronDown,
@@ -67,11 +68,12 @@ import type { InstructorProfileRead } from "../api/types";
 import { ApiError } from "../api/client";
 import { cn } from "../lib/cn";
 
-type TabKey = "general" | "security";
+type TabKey = "general" | "security" | "notifications";
 
 const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; sub: string }[] = [
-  { key: "general",  label: "General",  icon: Settings,    sub: "Profile, info & social links" },
-  { key: "security", label: "Security", icon: ShieldCheck, sub: "Password & notifications" },
+  { key: "general",       label: "General",       icon: Settings,    sub: "Profile, info & social links" },
+  { key: "security",      label: "Security",      icon: ShieldCheck, sub: "Change your password" },
+  { key: "notifications", label: "Notifications", icon: Bell,        sub: "Email & push preferences" },
 ];
 
 export function SettingsPage() {
@@ -125,8 +127,9 @@ export function SettingsPage() {
         </aside>
 
         <section className="rounded-2xl bg-white p-6 shadow-sm">
-          {tab === "general"  && <CombinedGeneralTab />}
-          {tab === "security" && <SecurityTab />}
+          {tab === "general"       && <CombinedGeneralTab />}
+          {tab === "security"      && <SecurityTab />}
+          {tab === "notifications" && <NotificationsTab />}
         </section>
       </div>
     </AppShell>
@@ -587,15 +590,18 @@ function SocialLinksTab() {
 
 function SecurityTab() {
   return (
-    <div className="flex flex-col gap-10">
-      <div>
-        <TabHeader title="Change Password" subtitle="Update your password to keep your account secure" />
-        <PasswordForm />
-      </div>
-      <div className="border-t border-violet-50 pt-8">
-        <TabHeader title="Notifications" subtitle="Choose which emails and alerts you receive" />
-        <NotificationsForm />
-      </div>
+    <div>
+      <TabHeader title="Change Password" subtitle="Update your password to keep your account secure" />
+      <PasswordForm />
+    </div>
+  );
+}
+
+function NotificationsTab() {
+  return (
+    <div>
+      <TabHeader title="Notifications" subtitle="Choose which emails and alerts you receive" />
+      <NotificationsForm />
     </div>
   );
 }
