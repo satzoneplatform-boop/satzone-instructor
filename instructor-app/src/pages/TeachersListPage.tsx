@@ -3,7 +3,6 @@ import {
   Search,
   SlidersHorizontal,
   Download,
-  Plus,
   ArrowDownUp,
   Eye,
   Pencil,
@@ -11,7 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { exportExcel } from "../lib/exportExcel";
@@ -106,12 +105,6 @@ export function TeachersListPage() {
           >
             <Download size={16} /> Export
           </button>
-          <Link
-            to="/teachers/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-secondary/90"
-          >
-            <Plus size={16} /> Add Teachers
-          </Link>
         </div>
       </div>
 
