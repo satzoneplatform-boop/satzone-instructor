@@ -11,15 +11,13 @@ import { GoogleCallback } from "./pages/GoogleCallback";
 
 // App
 import { DashboardPage } from "./pages/DashboardPage";
-import { TeachersListPage } from "./pages/TeachersListPage";
-import { TeacherFormPage } from "./pages/TeacherFormPage";
-import { TeacherDetailPage } from "./pages/TeacherDetailPage";
 import { StudentsListPage } from "./pages/StudentsListPage";
 import { StudentFormPage } from "./pages/StudentFormPage";
 import { StudentDetailPage } from "./pages/StudentDetailPage";
 import { CoursesListPage } from "./pages/CoursesListPage";
 import { CourseFormPage } from "./pages/CourseFormPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
+import { CourseContentPage } from "./pages/CourseContentPage";
 import { TransactionsListPage } from "./pages/TransactionsListPage";
 import { TransactionFormPage } from "./pages/TransactionFormPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
@@ -57,10 +55,6 @@ function AppRoutes() {
       {/* Protected */}
       <Route path="/" element={<AuthGate mode="authed"><DashboardPage /></AuthGate>} />
 
-      <Route path="/teachers" element={<AuthGate mode="authed"><TeachersListPage /></AuthGate>} />
-      <Route path="/teachers/new" element={<AuthGate mode="authed"><TeacherFormPage mode="create" /></AuthGate>} />
-      <Route path="/teachers/:id" element={<AuthGate mode="authed"><TeacherDetailPage /></AuthGate>} />
-      <Route path="/teachers/:id/edit" element={<AuthGate mode="authed"><TeacherFormPage mode="edit" /></AuthGate>} />
 
       <Route path="/students" element={<AuthGate mode="authed"><StudentsListPage /></AuthGate>} />
       <Route path="/students/new" element={<AuthGate mode="authed"><StudentFormPage mode="create" /></AuthGate>} />
@@ -70,6 +64,7 @@ function AppRoutes() {
       <Route path="/courses" element={<AuthGate mode="authed"><CoursesListPage /></AuthGate>} />
       <Route path="/courses/new" element={<AuthGate mode="authed"><CourseFormPage mode="create" /></AuthGate>} />
       <Route path="/courses/:id" element={<AuthGate mode="authed"><CourseDetailPage /></AuthGate>} />
+      <Route path="/courses/:id/content" element={<AuthGate mode="authed"><CourseContentPage /></AuthGate>} />
       <Route path="/courses/:id/edit" element={<AuthGate mode="authed"><CourseFormPage mode="edit" /></AuthGate>} />
 
       <Route path="/transactions" element={<AuthGate mode="authed"><TransactionsListPage /></AuthGate>} />

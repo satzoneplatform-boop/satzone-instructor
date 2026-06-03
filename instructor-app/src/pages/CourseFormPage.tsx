@@ -163,7 +163,7 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
       }
 
       notify(mode === "create" ? "Course created." : "Course updated.", "success");
-      nav(courseId ? `/courses/${courseId}` : "/courses");
+      nav(mode === "create" && courseId ? `/courses/${courseId}/content` : courseId ? `/courses/${courseId}` : "/courses");
     } catch (e) {
       if (e instanceof ApiError) setError(e.message);
       else setError(e instanceof Error ? e.message : "Could not save.");
