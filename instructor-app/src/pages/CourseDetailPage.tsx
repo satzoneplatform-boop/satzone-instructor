@@ -414,7 +414,14 @@ function MediaPanel({
         <h3 className="text-[14px] font-semibold text-ink">Preview video</h3>
         <div className="relative mt-3 overflow-hidden rounded-lg">
           {course.has_preview_video ? (
-            <HLSPlayer source={{ kind: "preview", slug: course.slug }} posterUrl={course.thumbnail_url ?? undefined} />
+            <HLSPlayer
+              source={
+                course.preview_playback_url
+                  ? { kind: "url", url: course.preview_playback_url }
+                  : { kind: "preview", slug: course.slug }
+              }
+              posterUrl={course.thumbnail_url ?? undefined}
+            />
           ) : (
             <div className="grid h-[160px] place-items-center rounded-lg bg-violet-50/50 text-[13px] text-slate-400">
               No preview video
@@ -426,7 +433,7 @@ function MediaPanel({
             </div>
           )}
         </div>
-        <p className="mt-2 text-[11px] text-slate-400">MP4, MOV, AVI</p>
+        <p className="mt-2 text-[11px] text-slate-400">Max 50 MB · MP4, MOV, AVI</p>
         <div className="mt-2 flex items-center gap-2">
           <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${videoPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
             <Upload size={14} /> {videoPct !== null ? `${videoPct}%…` : course.has_preview_video ? "Replace" : "Upload video"}

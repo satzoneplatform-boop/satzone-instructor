@@ -19,9 +19,10 @@ import {
   createMyCourse,
   getMyCourse,
   updateMyCourse,
-  uploadCoursePreviewVideo,
+  uploadCoursePreviewVideoWithProgress,
   uploadCourseThumbnail,
 } from "../api/instructor";
+import { CircularProgress } from "../components/CircularProgress";
 import { listCategories } from "../api/courses";
 import { useToast } from "../components/Toast";
 import type { CategoryRead, CourseLevel } from "../api/types";
@@ -61,6 +62,8 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [previewVideo, setPreviewVideo] = useState<File | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [previewVideoPct, setPreviewVideoPct] = useState<number | null>(null);
+  const previewAbort = useRef<AbortController | null>(null);
   const [loading, setLoading] = useState(mode === "edit");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +162,15 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
         await uploadCourseThumbnail(courseId, thumbnail);
       }
       if (previewVideo && courseId) {
-        await uploadCoursePreviewVideo(courseId, previewVideo);
+        setPreviewVideoPct(0);
+        previewAbort.current = new AbortController();
+        await uploadCoursePreviewVideoWithProgress(
+          courseId,
+          previewVideo,
+          setPreviewVideoPct,
+          previewAbort.current.signal
+        );
+        setPreviewVideoPct(null);
       }
 
       notify(mode === "create" ? "Course created." : "Course updated.", "success");
@@ -248,7 +259,8 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
               accept="video/*"
               file={previewVideo}
               label="Preview video"
-              sizeLimit="MP4, MOV, AVI"
+              sizeLimit="Max 50 MB · MP4, MOV, AVI"
+              uploadProgress={previewVideoPct}
               onFile={setPreviewVideo}
             />
           </div>
@@ -314,10 +326,10 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
             </button>
             <button
               type="submit"
-              disabled={submitting || loading}
+              disabled={submitting || loading || previewVideoPct !== null}
               className="rounded-lg bg-primary px-8 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
             >
-              {submitting ? "Saving…" : mode === "create" ? "Create course" : "Save changes"}
+              {previewVideoPct !== null ? `Uploading video ${previewVideoPct}%…` : submitting ? "Saving…" : mode === "create" ? "Create course" : "Save changes"}
             </button>
           </div>
         </section>
@@ -416,6 +428,7 @@ function UploadTile({
   previewUrl,
   label,
   sizeLimit,
+  uploadProgress,
   onFile,
 }: {
   icon: React.ReactNode;
@@ -424,17 +437,28 @@ function UploadTile({
   previewUrl?: string | null;
   label: string;
   sizeLimit?: string;
+  uploadProgress?: number | null;
   onFile: (f: File | null) => void;
 }) {
+  const isUploading = uploadProgress !== null && uploadProgress !== undefined;
+
   return (
     <label
       className={cn(
         "flex h-[120px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-center transition",
+        isUploading ? "cursor-default border-primary bg-violet-50/60" :
         file ? "border-primary bg-violet-50/60" : "border-violet-200 bg-violet-50/30 hover:bg-violet-50/60"
       )}
     >
       {previewUrl && accept.startsWith("image/") ? (
         <img src={previewUrl} alt={label} className="h-full w-full rounded-md object-cover" />
+      ) : isUploading ? (
+        <div className="flex flex-col items-center gap-1.5">
+          <CircularProgress pct={uploadProgress!} size={52} strokeWidth={4} trackColor="#e2e8f0" progressColor="#615fff" />
+          <p className="text-[11px] text-slate-500">
+            {uploadProgress! < 100 ? "Uploading…" : "Processing…"}
+          </p>
+        </div>
       ) : (
         <>
           {icon}
@@ -452,6 +476,7 @@ function UploadTile({
         type="file"
         accept={accept}
         hidden
+        disabled={isUploading}
         onChange={(e) => onFile(e.target.files?.[0] ?? null)}
       />
     </label>
