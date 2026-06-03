@@ -26,7 +26,16 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
     let cancelled = false;
     let pollTimer: number | null = null;
 
-    async function attach(streamUrl: string) {
+    function attachDirect(videoUrl: string) {
+      const video = videoRef.current;
+      if (!video || cancelled) return;
+      // Tear down any previous HLS instance before switching to direct playback.
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+      video.src = videoUrl;
+      setState("ready");
+    }
+
+    async function attachHls(streamUrl: string) {
       const video = videoRef.current;
       if (!video || cancelled) return;
 
@@ -38,9 +47,7 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
       }
 
       if (Hls.isSupported()) {
-        if (hlsRef.current) {
-          hlsRef.current.destroy();
-        }
+        if (hlsRef.current) { hlsRef.current.destroy(); }
         const hls = new Hls();
         hlsRef.current = hls;
         hls.loadSource(streamUrl);
@@ -50,11 +57,8 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
         });
         hls.on(Hls.Events.ERROR, (_e, data) => {
           if (data.fatal) {
-            // On fatal error (IP change, token expiry, network), re-mint and retry once.
             setMessage("Reconnecting…");
-            setTimeout(() => {
-              if (!cancelled) loadOnce();
-            }, 400);
+            setTimeout(() => { if (!cancelled) loadOnce(); }, 400);
           }
         });
         return;
@@ -69,10 +73,15 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
       setMessage(null);
       try {
         if (source.kind === "url") {
-          await attach(source.url);
+          // preview_playback_url / playback_url from the admin API returns a
+          // direct video stream (range-based), NOT an HLS manifest. Use native
+          // <video src> unless the URL explicitly points to a .m3u8 file.
+          const isHls = /\.m3u8(\?|$)/i.test(source.url);
+          if (isHls) await attachHls(source.url);
+          else attachDirect(source.url);
         } else if (source.kind === "preview") {
           const r = await mintCoursePreviewPlayback(source.slug);
-          await attach(r.stream_url);
+          await attachHls(r.stream_url);
         } else {
           const r: LessonPlaybackResponse = await mintLessonPlayback(source.lessonId);
           if (r.hls_status !== "ready" || !r.hls_url) {
@@ -83,7 +92,7 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
             }
             return;
           }
-          await attach(r.hls_url);
+          await attachHls(r.hls_url);
         }
       } catch (e) {
         if (cancelled) return;
