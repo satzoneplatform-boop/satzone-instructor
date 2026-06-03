@@ -70,9 +70,7 @@ export function StudentsListPage() {
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h1 className="text-[20px] font-bold text-ink">Students</h1>
-          <p className="mt-1 text-[14px] text-slate-600">
-            Let's check your update today
-          </p>
+          <p className="mt-1 text-[14px] text-slate-600">Manage students enrolled in your courses</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -166,7 +164,7 @@ export function StudentsListPage() {
 
         <div className="flex items-center justify-between pt-4">
           <span className="text-[13px] text-slate-600">
-            Showing 1 to {Math.min(displayed.length, 10)} of {total} results
+            Showing {displayed.length} of {total} results
           </span>
           <Pager page={page} totalPages={Math.max(1, Math.ceil(total / 20))} onChange={setPage} />
         </div>

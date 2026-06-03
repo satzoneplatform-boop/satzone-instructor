@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import {
   Bell,
   Briefcase,
@@ -158,19 +158,19 @@ function UnifiedProfileTab() {
   const [expertiseInput, setExpertiseInput] = useState("");
   const [expertise, setExpertise] = useState<string[]>([]);
 
-  // Address
-  const [country, setCountry] = useState("Bangladesh");
-  const [city, setCity] = useState("Dhaka");
-  const [address, setAddress] = useState("Mirpur-11, Dhaka 1214, Bangladesh");
-  const [postal, setPostal] = useState("1214");
+  // Address (stored locally — no backend support yet)
+  const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
+  const [postal, setPostal] = useState("");
 
   // Social links
   const [linkedin, setLinkedin] = useState("");
   const [twitter, setTwitter] = useState("");
   const [website, setWebsite] = useState("");
-  const [facebook, setFacebook] = useState("https://facebook.com/");
-  const [instagram, setInstagram] = useState("https://instagram.com/");
-  const [youtube, setYoutube] = useState("https://youtube.com/");
+  const [facebook, setFacebook] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [youtube, setYoutube] = useState("");
 
   // Avatar
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -204,12 +204,16 @@ function UnifiedProfileTab() {
       })
       .catch(() => {});
     try {
-      const raw = localStorage.getItem("studyq.social");
+      const raw = localStorage.getItem("studyq.local");
       if (raw) {
         const saved = JSON.parse(raw);
         if (saved.facebook)  setFacebook(saved.facebook);
         if (saved.instagram) setInstagram(saved.instagram);
         if (saved.youtube)   setYoutube(saved.youtube);
+        if (saved.country)   setCountry(saved.country);
+        if (saved.city)      setCity(saved.city);
+        if (saved.address)   setAddress(saved.address);
+        if (saved.postal)    setPostal(saved.postal);
       }
     } catch { /* ignore */ }
   }, []);
@@ -273,7 +277,7 @@ function UnifiedProfileTab() {
           website_url: website.trim() || undefined,
         }),
       ]);
-      localStorage.setItem("studyq.social", JSON.stringify({ facebook, instagram, youtube }));
+      localStorage.setItem("studyq.local", JSON.stringify({ facebook, instagram, youtube, country, city, address, postal }));
       await refreshUser();
       setMsg({ kind: "ok", text: "Profile saved." });
     } catch (e) {
@@ -353,7 +357,7 @@ function UnifiedProfileTab() {
           <InputWithIcon icon={<Mail size={14} />} value={email} onChange={setEmail} disabled />
         </Field>
         <Field label="Phone Number">
-          <InputWithIcon icon={<Phone size={14} />} value={phone} onChange={setPhone} />
+          <InputWithIcon icon={<Phone size={14} />} value={phone} onChange={setPhone} disabled />
         </Field>
       </div>
 
@@ -382,7 +386,15 @@ function UnifiedProfileTab() {
       <div className="mt-4">
         <Field label="Expertise">
           <div className="flex gap-2">
-            <InputWithIcon icon={null} value={expertiseInput} onChange={setExpertiseInput} placeholder="e.g. React, Node.js, Python" />
+            <InputWithIcon
+              icon={null}
+              value={expertiseInput}
+              onChange={setExpertiseInput}
+              placeholder="e.g. React, Node.js, Python"
+              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") { e.preventDefault(); addExpertiseTag(); }
+              }}
+            />
             <button
               type="button"
               onClick={addExpertiseTag}
@@ -476,13 +488,23 @@ function NotificationsTab() {
 function PasswordForm() {
   const [oldPw, setOldPw] = useState("");
   const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (newPw !== confirmPw) {
+      setMsg({ kind: "err", text: "New passwords do not match." });
+      return;
+    }
+    if (newPw.length < 8) {
+      setMsg({ kind: "err", text: "New password must be at least 8 characters." });
+      return;
+    }
     setBusy(true);
     setMsg(null);
     try {
@@ -490,6 +512,7 @@ function PasswordForm() {
       setMsg({ kind: "ok", text: "Password updated." });
       setOldPw("");
       setNewPw("");
+      setConfirmPw("");
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.code === "invalid_credentials") setMsg({ kind: "err", text: "Current password is wrong." });
@@ -512,8 +535,14 @@ function PasswordForm() {
           <Field label="New Password">
             <PasswordInput value={newPw} onChange={setNewPw} show={showNew} onToggle={() => setShowNew((v) => !v)} />
           </Field>
+          <Field label="Confirm New Password">
+            <PasswordInput value={confirmPw} onChange={setConfirmPw} show={showConfirm} onToggle={() => setShowConfirm((v) => !v)} />
+          </Field>
+          {newPw && confirmPw && newPw !== confirmPw && (
+            <p className="text-[12px] text-danger-500">Passwords do not match.</p>
+          )}
         </div>
-        <div className="relative grid h-[180px] place-items-center">
+        <div className="relative grid h-[220px] place-items-center">
           <div className="absolute inset-x-12 top-4 grid h-10 place-items-center rounded-md bg-primary text-white">
             <span className="font-bold tracking-[8px]">***</span>
           </div>
@@ -528,7 +557,7 @@ function PasswordForm() {
       <div className="mt-6 flex items-center gap-4">
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || !oldPw || !newPw || !confirmPw}
           className="rounded-lg bg-primary px-6 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
         >
           {busy ? "Saving…" : "Update Password"}
@@ -645,12 +674,14 @@ function InputWithIcon({
   onChange,
   placeholder,
   disabled,
+  onKeyDown,
 }: {
   icon: React.ReactNode | null;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
 }) {
   return (
     <div
@@ -664,6 +695,7 @@ function InputWithIcon({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         disabled={disabled}
         className="h-full flex-1 bg-transparent text-[14px] outline-none placeholder:text-slate-300 disabled:text-slate-500"
@@ -672,8 +704,25 @@ function InputWithIcon({
   );
 }
 
+const COUNTRIES = [
+  "Afghanistan", "Albania", "Algeria", "Argentina", "Australia", "Austria", "Azerbaijan",
+  "Bangladesh", "Belarus", "Belgium", "Bolivia", "Bosnia and Herzegovina", "Brazil",
+  "Cambodia", "Canada", "Chile", "China", "Colombia", "Croatia", "Czech Republic",
+  "Denmark", "Ecuador", "Egypt", "Ethiopia", "Finland", "France",
+  "Georgia", "Germany", "Ghana", "Greece", "Guatemala",
+  "Hungary", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
+  "Japan", "Jordan", "Kazakhstan", "Kenya", "Kuwait",
+  "Lebanon", "Libya", "Lithuania", "Malaysia", "Mexico", "Morocco",
+  "Nepal", "Netherlands", "New Zealand", "Nigeria", "Norway",
+  "Pakistan", "Palestine", "Peru", "Philippines", "Poland", "Portugal",
+  "Qatar", "Romania", "Russia", "Saudi Arabia", "Senegal", "Serbia",
+  "Singapore", "Slovakia", "South Africa", "South Korea", "Spain", "Sri Lanka", "Sudan", "Sweden", "Switzerland",
+  "Syria", "Taiwan", "Tanzania", "Thailand", "Tunisia", "Turkey",
+  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
+  "Uzbekistan", "Venezuela", "Vietnam", "Yemen", "Zimbabwe",
+];
+
 function CountrySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const COUNTRIES = ["Bangladesh", "United States", "United Kingdom", "India", "Pakistan", "Germany"];
   return (
     <div className="relative">
       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full bg-amber-500" />
@@ -682,6 +731,7 @@ function CountrySelect({ value, onChange }: { value: string; onChange: (v: strin
         onChange={(e) => onChange(e.target.value)}
         className="h-11 w-full appearance-none rounded-lg border border-violet-100 bg-white pl-7 pr-9 text-[14px] outline-none focus:border-primary"
       >
+        <option value="" disabled>Select country</option>
         {COUNTRIES.map((c) => (
           <option key={c} value={c}>{c}</option>
         ))}

@@ -158,7 +158,7 @@ export function StudentFormPage({ mode }: { mode: "create" | "edit" }) {
         <div className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="text-[20px] font-bold text-ink">{heading}</h1>
-            <p className="mt-1 text-[14px] text-slate-600">Let's check your update today</p>
+            <p className="mt-1 text-[14px] text-slate-600">{mode === "create" ? "Fill in the student's details" : "Update student information"}</p>
           </div>
           <div className="flex items-center gap-3">
             <button

@@ -13,9 +13,9 @@ type Stat = {
 
 const STAT_CONFIG: Omit<Stat, "value">[] = [
   { label: "Total Students", delta: "—", deltaUp: true,  icon: "students", bg: "bg-violet-50",   iconColor: "text-primary"     },
-  { label: "Total Course",   delta: "—", deltaUp: true,  icon: "book",     bg: "bg-sky-50",      iconColor: "text-blue-500"    },
-  { label: "Total Video",    delta: "—", deltaUp: true,  icon: "video",    bg: "bg-positive-50", iconColor: "text-positive-600" },
-  { label: "Total Earning",  delta: "—", deltaUp: true,  icon: "money",    bg: "bg-warn-50",     iconColor: "text-amber-500"   },
+  { label: "Total Courses",  delta: "—", deltaUp: true,  icon: "book",     bg: "bg-sky-50",      iconColor: "text-blue-500"    },
+  { label: "Total Lessons",  delta: "—", deltaUp: true,  icon: "video",    bg: "bg-positive-50", iconColor: "text-positive-600" },
+  { label: "Total Earnings", delta: "—", deltaUp: true,  icon: "money",    bg: "bg-warn-50",     iconColor: "text-amber-500"   },
 ];
 
 export type OverviewPoint = { name: string; enrollments: number; completions: number; progress: number };

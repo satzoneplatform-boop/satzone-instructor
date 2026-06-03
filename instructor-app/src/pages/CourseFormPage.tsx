@@ -1,6 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
-  ArrowRight,
   Bold,
   ChevronDown,
   HelpCircle,
@@ -187,7 +186,7 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
         <div className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="text-[20px] font-bold text-ink">{heading}</h1>
-            <p className="mt-1 text-[14px] text-slate-600">Let's check your update today</p>
+            <p className="mt-1 text-[14px] text-slate-600">{mode === "create" ? "Fill in the details to create a new course" : "Update your course information"}</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -221,23 +220,13 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
             </Field>
 
             <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] font-medium text-secondary">
-                  Course Description <span className="text-danger-500">*</span>
-                </span>
-              </div>
-              <div className="rounded-lg border border-violet-100 bg-white">
-                <div className="flex items-center gap-3 border-b border-violet-50 px-3 py-2 text-slate-500">
-                  <Bold size={14} /> <Italic size={14} /> <Underline size={14} />{" "}
-                  <LinkIcon size={14} /> <Smile size={14} />
-                </div>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => update("description", e.target.value)}
-                  placeholder="Tell students what this course covers."
-                  className="min-h-[120px] w-full resize-y bg-transparent px-3 py-2 text-[14px] outline-none placeholder:text-slate-300"
-                />
-              </div>
+              <span className="text-[13px] font-medium text-secondary">
+                Course Description <span className="text-danger-500">*</span>
+              </span>
+              <DescriptionEditor
+                value={form.description}
+                onChange={(v) => update("description", v)}
+              />
             </div>
           </div>
         </section>
@@ -259,7 +248,7 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
               accept="video/*"
               file={previewVideo}
               label="Preview video"
-              sizeLimit="Max 2 GB · MP4, MOV, AVI"
+              sizeLimit="MP4, MOV, AVI"
               onFile={setPreviewVideo}
             />
           </div>
@@ -466,5 +455,99 @@ function UploadTile({
         onChange={(e) => onFile(e.target.files?.[0] ?? null)}
       />
     </label>
+  );
+}
+
+const EMOJIS = [
+  "😀","😊","😂","🤣","😍","🥰","😎","🤓","🤔","😅",
+  "🎉","🎊","👍","👎","❤️","🔥","✅","❌","⭐","🌟",
+  "💡","📚","🎓","💪","🚀","🎯","📝","💻","🏆","🎁",
+  "🌍","💰","📈","🙌","✨","🤝","💬","📣","🛠️","⚡",
+];
+
+function DescriptionEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const [showEmoji, setShowEmoji] = useState(false);
+
+  function wrap(prefix: string, suffix: string) {
+    const ta = ref.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = value.slice(start, end);
+    const newVal = value.slice(0, start) + prefix + selected + suffix + value.slice(end);
+    onChange(newVal);
+    requestAnimationFrame(() => {
+      ta.focus();
+      if (selected) {
+        ta.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+      } else {
+        ta.setSelectionRange(start + prefix.length, start + prefix.length);
+      }
+    });
+  }
+
+  function insertEmoji(emoji: string) {
+    const ta = ref.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const newVal = value.slice(0, start) + emoji + value.slice(start);
+    onChange(newVal);
+    setShowEmoji(false);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  }
+
+  return (
+    <div className="rounded-lg border border-violet-100 bg-white focus-within:border-primary">
+      <div className="flex items-center gap-0.5 border-b border-violet-50 px-2 py-1.5">
+        <ToolBtn onClick={() => wrap("**", "**")} title="Bold"><Bold size={14} /></ToolBtn>
+        <ToolBtn onClick={() => wrap("_", "_")} title="Italic"><Italic size={14} /></ToolBtn>
+        <ToolBtn onClick={() => wrap("<u>", "</u>")} title="Underline"><Underline size={14} /></ToolBtn>
+        <ToolBtn onClick={() => wrap("[", "](https://)")} title="Link"><LinkIcon size={14} /></ToolBtn>
+        <div className="relative">
+          <ToolBtn onClick={() => setShowEmoji((v) => !v)} title="Emoji"><Smile size={14} /></ToolBtn>
+          {showEmoji && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowEmoji(false)} />
+              <div className="absolute left-0 top-full z-20 mt-1 grid w-[220px] grid-cols-8 gap-0.5 rounded-lg border border-violet-100 bg-white p-2 shadow-lg">
+                {EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); insertEmoji(emoji); }}
+                    className="grid h-7 w-7 place-items-center rounded text-[16px] hover:bg-violet-50"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      <textarea
+        ref={ref}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Tell students what this course covers."
+        className="min-h-[120px] w-full resize-y bg-transparent px-3 py-2 text-[14px] outline-none placeholder:text-slate-300"
+      />
+    </div>
+  );
+}
+
+function ToolBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+      title={title}
+      className="grid h-7 w-7 place-items-center rounded text-slate-500 hover:bg-violet-50 hover:text-primary"
+    >
+      {children}
+    </button>
   );
 }

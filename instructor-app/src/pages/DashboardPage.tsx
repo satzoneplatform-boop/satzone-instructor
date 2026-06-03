@@ -43,7 +43,7 @@ export function DashboardPage() {
           Welcome back, {firstName}!
         </h1>
         <p className="mt-1 text-[14px] text-slate-600">
-          Track your manage and LMS platform performance
+          Track your students, courses, and earnings
         </p>
       </div>
 

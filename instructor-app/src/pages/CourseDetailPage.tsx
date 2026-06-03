@@ -426,7 +426,7 @@ function MediaPanel({
             </div>
           )}
         </div>
-        <p className="mt-2 text-[11px] text-slate-400">Max 2 GB · MP4, MOV, AVI</p>
+        <p className="mt-2 text-[11px] text-slate-400">MP4, MOV, AVI</p>
         <div className="mt-2 flex items-center gap-2">
           <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${videoPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
             <Upload size={14} /> {videoPct !== null ? `${videoPct}%…` : course.has_preview_video ? "Replace" : "Upload video"}
@@ -459,7 +459,7 @@ function CourseSidePanel({ course }: { course: InstructorCourseRead }) {
         <h3 className="text-[15px] font-semibold text-ink">At a glance</h3>
         <dl className="mt-3 divide-y divide-violet-50 text-[13px]">
           <Row label="Enrollments" value={String(course.enrollments_count)} />
-          <Row label="Lectures" value={String(course.lectures_count)} />
+          <Row label="Lessons" value={String(course.lectures_count)} />
           <Row label="Duration" value={`${course.duration_minutes} min`} />
           <Row label="Level" value={course.level} />
           <Row label="Price" value={formatPrice(course)} />

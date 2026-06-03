@@ -77,8 +77,8 @@ export function TransactionsListPage() {
     <AppShell>
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="text-[20px] font-bold text-ink">Transaction</h1>
-          <p className="mt-1 text-[14px] text-slate-600">Let's check your update today</p>
+          <h1 className="text-[20px] font-bold text-ink">Transactions</h1>
+          <p className="mt-1 text-[14px] text-slate-600">View and track all student payments</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -172,9 +172,9 @@ export function TransactionsListPage() {
 
         <div className="flex items-center justify-between pt-4">
           <span className="text-[13px] text-slate-600">
-            Showing 1 to {Math.min(displayed.length, 10)} of 97 results
+            Showing {displayed.length} of {filtered.length} results
           </span>
-          <Pager page={page} totalPages={20} onChange={setPage} />
+          <Pager page={page} totalPages={Math.max(1, Math.ceil(filtered.length / 20))} onChange={setPage} />
         </div>
       </section>
 

@@ -77,8 +77,8 @@ export function CoursesListPage() {
     <AppShell>
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="text-[20px] font-bold text-ink">Course</h1>
-          <p className="mt-1 text-[14px] text-slate-600">Let's check your update today</p>
+          <h1 className="text-[20px] font-bold text-ink">Courses</h1>
+          <p className="mt-1 text-[14px] text-slate-600">Manage your published and draft courses</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -180,7 +180,7 @@ export function CoursesListPage() {
 
         <div className="flex items-center justify-between pt-4">
           <span className="text-[13px] text-slate-600">
-            Showing 1 to {Math.min(displayed.length, 10)} of {total} results
+            Showing {displayed.length} of {total} results
           </span>
           <Pager page={page} totalPages={Math.max(1, Math.ceil(total / 20))} onChange={setPage} />
         </div>

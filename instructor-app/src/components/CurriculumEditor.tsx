@@ -1056,7 +1056,7 @@ function VideoDropZone({
             <p className="text-[13px] font-medium">
               {dragOver ? "Drop video here" : "Drag & drop video or click to browse"}
             </p>
-            <p className="mt-0.5 text-[11px]">MP4, MOV, AVI, MKV — up to 2 GB</p>
+            <p className="mt-0.5 text-[11px]">MP4, MOV, AVI, MKV</p>
           </div>
           <input
             type="file"
