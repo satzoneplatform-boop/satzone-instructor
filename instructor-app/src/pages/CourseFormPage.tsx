@@ -117,7 +117,7 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
     }
     setSubmitting(true);
     try {
-      const baseCents = form.basePrice ? Math.round(parseFloat(form.basePrice) * 100) : undefined;
+      const baseCents = form.basePrice ? Math.round(parseFloat(form.basePrice) * 100) : 0;
       const discountCents =
         form.discountPct && baseCents
           ? Math.max(0, Math.round(baseCents * (1 - parseFloat(form.discountPct) / 100)))
@@ -166,10 +166,8 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
       notify(mode === "create" ? "Course created." : "Course updated.", "success");
       nav(mode === "create" && courseId ? `/courses/${courseId}/content` : courseId ? `/courses/${courseId}` : "/courses");
     } catch (e) {
-      if (e instanceof ApiError) {
-        const detail = e.details ? `\n${JSON.stringify(e.details, null, 2)}` : "";
-        setError(`${e.message}${detail}`);
-      } else setError(e instanceof Error ? e.message : "Could not save.");
+      if (e instanceof ApiError) setError(e.message);
+      else setError(e instanceof Error ? e.message : "Could not save.");
     } finally {
       setSubmitting(false);
     }
@@ -314,7 +312,7 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
           </div>
 
           {error && (
-            <pre className="mt-4 whitespace-pre-wrap rounded-md bg-danger-50 px-3 py-2 text-[12px] text-danger-500">{error}</pre>
+            <div className="mt-4 rounded-md bg-danger-50 px-3 py-2 text-[13px] text-danger-500">{error}</div>
           )}
 
           <div className="mt-6 flex items-center gap-3">
