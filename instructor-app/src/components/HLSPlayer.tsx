@@ -5,6 +5,24 @@ import { mintCoursePreviewPlayback, mintLessonPlayback } from "../api/playback";
 import type { LessonPlaybackResponse } from "../api/types";
 import { ApiError } from "../api/client";
 
+// The backend bakes its internal address (e.g. http://16.171.208.156:8000)
+// into every playback URL. That address is the raw FastAPI port which is not
+// publicly reachable — only the nginx-fronted domain is. Rewrite every stream
+// URL to go through the configured public API origin.
+const _API_ORIGIN = (() => {
+  try { return new URL(import.meta.env.VITE_API_BASE_URL ?? "").origin; }
+  catch { return ""; }
+})();
+
+function normalizeStreamUrl(url: string): string {
+  if (!_API_ORIGIN || !url) return url;
+  try {
+    const u = new URL(url);
+    if (u.origin === _API_ORIGIN) return url; // already correct
+    return _API_ORIGIN + u.pathname + u.search;
+  } catch { return url; }
+}
+
 type Source =
   | { kind: "lesson"; lessonId: string }
   | { kind: "preview"; slug: string }
@@ -89,18 +107,16 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
       setMessage(null);
       try {
         if (source.kind === "url") {
-          // preview_playback_url / playback_url from the admin API returns a
-          // direct video stream (range-based), NOT an HLS manifest. Use native
-          // <video src> unless the URL explicitly points to a .m3u8 file.
-          const isHls = /\.m3u8(\?|$)/i.test(source.url);
-          if (isHls) await attachHls(source.url);
-          else attachDirect(source.url);
+          const url = normalizeStreamUrl(source.url);
+          const isHls = /\.m3u8(\?|$)/i.test(url);
+          if (isHls) await attachHls(url);
+          else attachDirect(url);
         } else if (source.kind === "preview") {
           const r = await mintCoursePreviewPlayback(source.slug);
-          // stream_url may be a direct /preview-stream endpoint (not HLS)
-          const isHls = /\.m3u8(\?|$)/i.test(r.stream_url);
-          if (isHls) await attachHls(r.stream_url);
-          else attachDirect(r.stream_url);
+          const url = normalizeStreamUrl(r.stream_url);
+          const isHls = /\.m3u8(\?|$)/i.test(url);
+          if (isHls) await attachHls(url);
+          else attachDirect(url);
         } else {
           const r: LessonPlaybackResponse = await mintLessonPlayback(source.lessonId);
           if (r.hls_status !== "ready" || !r.hls_url) {
@@ -111,7 +127,7 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
             }
             return;
           }
-          await attachHls(r.hls_url);
+          await attachHls(normalizeStreamUrl(r.hls_url));
         }
       } catch (e) {
         if (cancelled) return;
