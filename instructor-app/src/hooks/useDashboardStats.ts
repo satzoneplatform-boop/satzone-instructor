@@ -1,8 +1,22 @@
 import { useEffect, useState } from "react";
 import { listMyCourses, getCourseAnalytics } from "../api/instructor";
-import { STATS as MOCK_STATS } from "../data/mock";
 
-type Stat = (typeof MOCK_STATS)[number];
+type Stat = {
+  label: string;
+  value: string;
+  delta: string;
+  deltaUp: boolean;
+  icon: "students" | "book" | "video" | "money";
+  bg: string;
+  iconColor: string;
+};
+
+const STAT_CONFIG: Omit<Stat, "value">[] = [
+  { label: "Total Students", delta: "—", deltaUp: true,  icon: "students", bg: "bg-violet-50",   iconColor: "text-primary"     },
+  { label: "Total Course",   delta: "—", deltaUp: true,  icon: "book",     bg: "bg-sky-50",      iconColor: "text-blue-500"    },
+  { label: "Total Video",    delta: "—", deltaUp: true,  icon: "video",    bg: "bg-positive-50", iconColor: "text-positive-600" },
+  { label: "Total Earning",  delta: "—", deltaUp: true,  icon: "money",    bg: "bg-warn-50",     iconColor: "text-amber-500"   },
+];
 
 export type OverviewPoint = { name: string; enrollments: number; completions: number; progress: number };
 export type AnalysisPoint = { name: string; enrolled: number; completed: number };
@@ -81,10 +95,10 @@ export function useDashboardStats(): DashboardData {
 
         setData({
           stats: [
-            { ...MOCK_STATS[0], value: fmtNum(totalEnrollments) },
-            { ...MOCK_STATS[1], value: fmtNum(page.total) },
-            { ...MOCK_STATS[2], value: fmtNum(totalLectures) },
-            { ...MOCK_STATS[3], value: fmtMoney(totalRevenue) },
+            { ...STAT_CONFIG[0], value: fmtNum(totalEnrollments) },
+            { ...STAT_CONFIG[1], value: fmtNum(page.total) },
+            { ...STAT_CONFIG[2], value: fmtNum(totalLectures) },
+            { ...STAT_CONFIG[3], value: fmtMoney(totalRevenue) },
           ],
           overview,
           analysis,

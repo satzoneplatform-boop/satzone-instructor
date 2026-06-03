@@ -15,7 +15,7 @@ import { exportExcel } from "../lib/exportExcel";
 import { useToast } from "../components/Toast";
 import { deleteUser } from "../api/users";
 import { useStudents } from "../hooks/useStudents";
-import type { StudentRow, StudentStatus } from "../data/studentsMock";
+import type { StudentRow, StudentStatus } from "../types/rows";
 import { cn } from "../lib/cn";
 
 const COLS = [

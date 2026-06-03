@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { listMyOrders } from "../api/payments";
 import { listMyCourses } from "../api/instructor";
-import { type TxnRow, type TxnStatus } from "../data/transactionsMock";
+import { type TxnRow, type TxnStatus } from "../types/rows";
 
 function mapStatus(s: string): TxnStatus {
   if (s === "paid") return "completed";

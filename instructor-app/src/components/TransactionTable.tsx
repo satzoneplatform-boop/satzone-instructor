@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowDownUp, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { type Txn } from "../data/mock";
+import { type Txn } from "../types/rows";
 import { cn } from "../lib/cn";
 
 const PAGE_SIZE = 10;

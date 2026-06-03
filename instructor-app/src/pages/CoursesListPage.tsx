@@ -17,7 +17,7 @@ import { exportExcel } from "../lib/exportExcel";
 import { useToast } from "../components/Toast";
 import { deleteCourse } from "../api/courses";
 import { useCourses } from "../hooks/useCourses";
-import type { CourseRow, CourseStatus } from "../data/coursesMock";
+import type { CourseRow, CourseStatus } from "../types/rows";
 import { cn } from "../lib/cn";
 
 const COLS = [

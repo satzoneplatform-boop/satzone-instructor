@@ -14,7 +14,7 @@ import { AppShell } from "../components/AppShell";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { exportExcel } from "../lib/exportExcel";
 import { useAdminTransactions } from "../hooks/useAdminTransactions";
-import type { TxnRow, TxnStatus, TxnMethod } from "../data/transactionsMock";
+import type { TxnRow, TxnStatus, TxnMethod } from "../types/rows";
 import { cn } from "../lib/cn";
 
 const COLS = [

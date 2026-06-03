@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { listCourses } from "../api/courses";
 import { useAuth } from "../auth/AuthContext";
-import { type CourseRow, type CourseStatus } from "../data/coursesMock";
+import { type CourseRow, type CourseStatus } from "../types/rows";
 
 function fmtPrice(cents: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(cents / 100);

@@ -8,17 +8,13 @@ import {
   Tooltip,
 } from "recharts";
 import { TrendingUp } from "lucide-react";
-import { STUDENT_DATA } from "../data/mock";
 import type { AnalysisPoint } from "../hooks/useDashboardStats";
 
 type Props = { data?: AnalysisPoint[]; loading?: boolean };
 
 export function StudentAnalysisChart({ data, loading }: Props) {
   const hasReal = Boolean(data && data.length > 0);
-
-  const chartData = hasReal
-    ? data!
-    : STUDENT_DATA.map((d) => ({ name: d.day, enrolled: d.enrolled, completed: d.left }));
+  const chartData = data ?? [];
 
   const totalEnrolled = chartData.reduce((s, d) => s + d.enrolled, 0);
   const totalCompleted = chartData.reduce((s, d) => s + d.completed, 0);

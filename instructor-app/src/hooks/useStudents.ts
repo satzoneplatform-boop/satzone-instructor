@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { listCourseStudents, listMyCourses } from "../api/instructor";
-import { type StudentRow, type StudentStatus } from "../data/studentsMock";
+import { type StudentRow, type StudentStatus } from "../types/rows";
 
 function statusFromCompletion(_completedAt: string | null): StudentStatus {
   return "active";

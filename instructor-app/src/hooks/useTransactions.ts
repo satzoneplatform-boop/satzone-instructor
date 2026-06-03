@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { listMyOrders } from "../api/payments";
 import { listMyCourses } from "../api/instructor";
-import { type Txn } from "../data/mock";
+import { type Txn } from "../types/rows";
 
 function brandToMethod(provider: string | null | undefined): Txn["method"] {
   if (!provider) return "mastercard";

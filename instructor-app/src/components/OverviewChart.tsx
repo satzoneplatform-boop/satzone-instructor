@@ -8,22 +8,13 @@ import {
   Tooltip,
 } from "recharts";
 import { TrendingUp } from "lucide-react";
-import { OVERVIEW_DATA } from "../data/mock";
 import type { OverviewPoint } from "../hooks/useDashboardStats";
 
 type Props = { data?: OverviewPoint[]; loading?: boolean };
 
 export function OverviewChart({ data, loading }: Props) {
   const hasReal = Boolean(data && data.length > 0);
-
-  const chartData = hasReal
-    ? data!
-    : OVERVIEW_DATA.map((d) => ({
-        name: d.day,
-        enrollments: d.students,
-        completions: d.teachers,
-        progress: d.other,
-      }));
+  const chartData = data ?? [];
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm">
