@@ -87,6 +87,17 @@ export function CourseContentPage() {
           <h2 className="text-[16px] font-semibold text-ink">Curriculum</h2>
         </div>
         <CurriculumEditor courseId={course.id} />
+
+        <div className="mt-8 flex items-center justify-between border-t border-violet-100 pt-5">
+          <p className="text-[13px] text-slate-400">Changes are saved automatically as you add sections and lessons.</p>
+          <button
+            type="button"
+            onClick={() => nav(`/courses/${course.id}`)}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600"
+          >
+            Done — Go to course
+          </button>
+        </div>
       </div>
     </AppShell>
   );

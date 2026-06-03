@@ -90,6 +90,7 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
   const [previewLessonId, setPreviewLessonId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [dragOverSection, setDragOverSection] = useState<string | null>(null);
+  const abortControllers = useRef<Record<string, AbortController>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -223,20 +224,25 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
 
   async function onUploadVideo(sectionId: string, lessonId: string, file: File) {
     const duration = await getVideoDuration(file);
+    const controller = new AbortController();
+    abortControllers.current[lessonId] = controller;
     setUploadProgress((p) => ({ ...p, [lessonId]: 0 }));
     try {
       const next = await uploadLessonVideoWithProgress(
         lessonId, file,
         (pct) => setUploadProgress((p) => ({ ...p, [lessonId]: pct })),
-        duration || undefined
+        { durationSeconds: duration || undefined, signal: controller.signal }
       );
       setSections((cur) => cur.map((s) =>
         s.id === sectionId ? { ...s, lessons: s.lessons.map((l) => l.id === lessonId ? next : l) } : s
       ));
       pollHls(sectionId, lessonId);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Upload failed.");
+      if ((e as Error).name !== "AbortError") {
+        setError(e instanceof ApiError ? e.message : "Upload failed.");
+      }
     } finally {
+      delete abortControllers.current[lessonId];
       setUploadProgress((p) => { const n = { ...p }; delete n[lessonId]; return n; });
     }
   }
@@ -518,6 +524,7 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
                           onPreview={() => setPreviewLessonId(lesson.id)}
                           onMoveUp={() => onMoveLessonUp(sec.id, lIdx)}
                           onMoveDown={() => onMoveLessonDown(sec.id, lIdx)}
+                          onCancelUpload={() => abortControllers.current[lesson.id]?.abort()}
                         />
                       );
                     })}
@@ -700,6 +707,7 @@ function LessonCard({
   onPreview,
   onMoveUp,
   onMoveDown,
+  onCancelUpload,
 }: {
   lesson: LessonAdminRead;
   index: number;
@@ -716,6 +724,7 @@ function LessonCard({
   onPreview: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onCancelUpload: () => void;
 }) {
   const meta = TYPE_META[lesson.type] ?? TYPE_META.video;
   const Icon = meta.icon;
@@ -823,6 +832,7 @@ function LessonCard({
           onUploadResource={onUploadResource}
           onDeleteVideo={onDeleteVideo}
           onDeleteResource={onDeleteResource}
+          onCancelUpload={onCancelUpload}
         />
       )}
     </div>
@@ -839,6 +849,7 @@ function LessonExpandPanel({
   onUploadResource,
   onDeleteVideo,
   onDeleteResource,
+  onCancelUpload,
 }: {
   lesson: LessonAdminRead;
   uploadProgress?: number;
@@ -847,6 +858,7 @@ function LessonExpandPanel({
   onUploadResource: (file: File) => void;
   onDeleteVideo: () => void;
   onDeleteResource: () => void;
+  onCancelUpload: () => void;
 }) {
   const [desc, setDesc] = useState(lesson.description ?? "");
   const [article, setArticle] = useState(lesson.article_content ?? "");
@@ -899,6 +911,7 @@ function LessonExpandPanel({
           uploadProgress={uploadProgress}
           onFile={onUploadVideo}
           onDelete={onDeleteVideo}
+          onCancel={onCancelUpload}
         />
       )}
 
@@ -941,11 +954,13 @@ function VideoDropZone({
   uploadProgress,
   onFile,
   onDelete,
+  onCancel,
 }: {
   lesson: LessonAdminRead;
   uploadProgress?: number;
   onFile: (file: File) => void;
   onDelete: () => void;
+  onCancel: () => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -996,7 +1011,7 @@ function VideoDropZone({
       {isUploading && (
         <div className="mb-3 flex items-center gap-4 rounded-xl border border-violet-100 bg-violet-50/40 p-4">
           <CircularProgress pct={uploadProgress!} size={64} strokeWidth={5} />
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-1 flex-col gap-0.5">
             <span className="text-[13px] font-semibold text-ink">
               {uploadProgress! < 100 ? "Uploading video…" : "Processing…"}
             </span>
@@ -1006,6 +1021,15 @@ function VideoDropZone({
               </span>
             )}
           </div>
+          {uploadProgress! < 100 && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-danger-200 px-3 py-1.5 text-[12px] font-medium text-danger-500 hover:bg-danger-50"
+            >
+              <X size={12} /> Cancel
+            </button>
+          )}
         </div>
       )}
 

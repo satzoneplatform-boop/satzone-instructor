@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Archive, Globe2, Pencil, Plus, Send, Star, Tag, Trash2, Upload, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
@@ -43,6 +43,8 @@ export function CourseDetailPage() {
   const [busy, setBusy] = useState(false);
   const [thumbPct, setThumbPct] = useState<number | null>(null);
   const [videoPct, setVideoPct] = useState<number | null>(null);
+  const thumbAbort = useRef<AbortController | null>(null);
+  const videoAbort = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -91,30 +93,38 @@ export function CourseDetailPage() {
 
   async function onThumbnail(file: File) {
     if (!course) return;
+    const controller = new AbortController();
+    thumbAbort.current = controller;
     setThumbPct(0);
     try {
-      await uploadCourseThumbnailWithProgress(course.id, file, setThumbPct);
+      await uploadCourseThumbnailWithProgress(course.id, file, setThumbPct, controller.signal);
       const fresh = await getMyCourse(course.id);
       setCourse(fresh);
       notify("Thumbnail updated.", "success");
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : "Upload failed.", "error");
+      if ((e as Error).name !== "AbortError")
+        notify(e instanceof ApiError ? e.message : "Upload failed.", "error");
     } finally {
+      thumbAbort.current = null;
       setThumbPct(null);
     }
   }
 
   async function onPreviewVideo(file: File) {
     if (!course) return;
+    const controller = new AbortController();
+    videoAbort.current = controller;
     setVideoPct(0);
     try {
-      await uploadCoursePreviewVideoWithProgress(course.id, file, setVideoPct);
+      await uploadCoursePreviewVideoWithProgress(course.id, file, setVideoPct, controller.signal);
       const fresh = await getMyCourse(course.id);
       setCourse(fresh);
       notify("Preview video uploaded.", "success");
     } catch (e) {
-      notify(e instanceof ApiError ? e.message : "Upload failed.", "error");
+      if ((e as Error).name !== "AbortError")
+        notify(e instanceof ApiError ? e.message : "Upload failed.", "error");
     } finally {
+      videoAbort.current = null;
       setVideoPct(null);
     }
   }
@@ -275,6 +285,8 @@ export function CourseDetailPage() {
                 onDeletePreviewVideo={onDeletePreviewVideo}
                 thumbPct={thumbPct}
                 videoPct={videoPct}
+                onCancelThumb={() => thumbAbort.current?.abort()}
+                onCancelVideo={() => videoAbort.current?.abort()}
               />
             )}
           </div>
@@ -344,6 +356,8 @@ function MediaPanel({
   onDeletePreviewVideo,
   thumbPct,
   videoPct,
+  onCancelThumb,
+  onCancelVideo,
 }: {
   course: InstructorCourseRead;
   onThumbnail: (f: File) => void;
@@ -352,6 +366,8 @@ function MediaPanel({
   onDeletePreviewVideo: () => void;
   thumbPct: number | null;
   videoPct: number | null;
+  onCancelThumb: () => void;
+  onCancelVideo: () => void;
 }) {
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -370,19 +386,23 @@ function MediaPanel({
             </div>
           )}
         </div>
-        <div className="mt-3 flex items-center gap-2">
+        <p className="mt-2 text-[11px] text-slate-400">Max 5 MB · JPG, PNG, WebP</p>
+        <div className="mt-2 flex items-center gap-2">
           <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${thumbPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
             <Upload size={14} /> {thumbPct !== null ? `${thumbPct}%…` : course.thumbnail_url ? "Replace" : "Upload image"}
             <input type="file" accept="image/*" hidden disabled={thumbPct !== null}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) onThumbnail(f); e.target.value = ""; }}
             />
           </label>
+          {thumbPct !== null && (
+            <button type="button" onClick={onCancelThumb}
+              className="inline-flex items-center gap-1.5 rounded-md border border-danger-200 px-3 py-2 text-[13px] font-medium text-danger-500 hover:bg-danger-50">
+              <X size={13} /> Cancel
+            </button>
+          )}
           {course.thumbnail_url && thumbPct === null && (
-            <button
-              type="button"
-              onClick={onDeleteThumbnail}
-              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-medium text-danger-500 hover:bg-danger-50"
-            >
+            <button type="button" onClick={onDeleteThumbnail}
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-medium text-danger-500 hover:bg-danger-50">
               <Trash2 size={14} /> Delete
             </button>
           )}
@@ -406,19 +426,23 @@ function MediaPanel({
             </div>
           )}
         </div>
-        <div className="mt-3 flex items-center gap-2">
+        <p className="mt-2 text-[11px] text-slate-400">Max 2 GB · MP4, MOV, AVI</p>
+        <div className="mt-2 flex items-center gap-2">
           <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${videoPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
             <Upload size={14} /> {videoPct !== null ? `${videoPct}%…` : course.has_preview_video ? "Replace" : "Upload video"}
             <input type="file" accept="video/*" hidden disabled={videoPct !== null}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) onPreviewVideo(f); e.target.value = ""; }}
             />
           </label>
+          {videoPct !== null && (
+            <button type="button" onClick={onCancelVideo}
+              className="inline-flex items-center gap-1.5 rounded-md border border-danger-200 px-3 py-2 text-[13px] font-medium text-danger-500 hover:bg-danger-50">
+              <X size={13} /> Cancel
+            </button>
+          )}
           {course.has_preview_video && videoPct === null && (
-            <button
-              type="button"
-              onClick={onDeletePreviewVideo}
-              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-medium text-danger-500 hover:bg-danger-50"
-            >
+            <button type="button" onClick={onDeletePreviewVideo}
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-medium text-danger-500 hover:bg-danger-50">
               <Trash2 size={14} /> Delete
             </button>
           )}

@@ -2,15 +2,12 @@ import { getAccessToken } from "../api/tokens";
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
-/**
- * Upload a single file via XHR so onProgress receives real byte-level progress (0–100).
- * Extra key/value pairs are appended to the FormData alongside the file.
- */
 export function uploadWithProgress<T>(
   path: string,
   file: File,
   onProgress: (pct: number) => void,
-  extra?: Record<string, string>
+  extra?: Record<string, string>,
+  signal?: AbortSignal
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const fd = new FormData();
@@ -41,6 +38,10 @@ export function uploadWithProgress<T>(
       }
     };
     xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.onabort = () => { const e = new Error("Upload cancelled"); e.name = "AbortError"; reject(e); };
+
+    signal?.addEventListener("abort", () => xhr.abort());
+
     xhr.send(fd);
   });
 }

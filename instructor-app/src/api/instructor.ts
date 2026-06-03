@@ -113,12 +113,15 @@ export function uploadCourseThumbnail(courseId: string, file: File) {
 export function uploadCourseThumbnailWithProgress(
   courseId: string,
   file: File,
-  onProgress: (pct: number) => void
+  onProgress: (pct: number) => void,
+  signal?: AbortSignal
 ) {
   return uploadWithProgress<UploadResponse>(
     `/instructor/courses/${courseId}/thumbnail`,
     file,
-    onProgress
+    onProgress,
+    undefined,
+    signal
   );
 }
 
@@ -129,12 +132,15 @@ export function uploadCoursePreviewVideo(courseId: string, file: File) {
 export function uploadCoursePreviewVideoWithProgress(
   courseId: string,
   file: File,
-  onProgress: (pct: number) => void
+  onProgress: (pct: number) => void,
+  signal?: AbortSignal
 ) {
   return uploadWithProgress<UploadResponse>(
     `/instructor/courses/${courseId}/preview-video`,
     file,
-    onProgress
+    onProgress,
+    undefined,
+    signal
   );
 }
 
@@ -235,18 +241,18 @@ export function uploadLessonVideo(lessonId: string, file: File, durationSeconds?
   );
 }
 
-/** Same as uploadLessonVideo but reports real upload progress via XHR. */
+/** Same as uploadLessonVideo but reports real upload progress via XHR. Supports cancel via signal. */
 export function uploadLessonVideoWithProgress(
   lessonId: string,
   file: File,
   onProgress: (pct: number) => void,
-  durationSeconds?: number
+  options?: { durationSeconds?: number; signal?: AbortSignal }
 ): Promise<LessonAdminRead> {
   const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
   return new Promise((resolve, reject) => {
     const fd = new FormData();
     fd.append("file", file);
-    if (durationSeconds) fd.append("duration_seconds", String(durationSeconds));
+    if (options?.durationSeconds) fd.append("duration_seconds", String(options.durationSeconds));
 
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${BASE}/instructor/lessons/${lessonId}/video`);
@@ -272,6 +278,10 @@ export function uploadLessonVideoWithProgress(
       }
     };
     xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.onabort = () => { const e = new Error("Upload cancelled"); e.name = "AbortError"; reject(e); };
+
+    options?.signal?.addEventListener("abort", () => xhr.abort());
+
     xhr.send(fd);
   });
 }

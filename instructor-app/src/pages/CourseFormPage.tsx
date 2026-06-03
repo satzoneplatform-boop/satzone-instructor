@@ -197,17 +197,15 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
             >
               <X size={16} /> Cancel
             </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
-            >
-              {mode === "create" ? (
-                <><ArrowRight size={16} /> Save &amp; Continue Editing</>
-              ) : (
-                <><Save size={16} /> Save Changes</>
-              )}
-            </button>
+            {mode === "edit" && (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600 disabled:opacity-60"
+              >
+                <Save size={16} /> Save Changes
+              </button>
+            )}
           </div>
         </div>
 
@@ -253,6 +251,7 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
               file={thumbnail}
               previewUrl={thumbnail ? URL.createObjectURL(thumbnail) : thumbnailUrl}
               label="Course thumbnail"
+              sizeLimit="Max 5 MB · JPG, PNG, WebP"
               onFile={setThumbnail}
             />
             <UploadTile
@@ -260,6 +259,7 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
               accept="video/*"
               file={previewVideo}
               label="Preview video"
+              sizeLimit="Max 2 GB · MP4, MOV, AVI"
               onFile={setPreviewVideo}
             />
           </div>
@@ -426,6 +426,7 @@ function UploadTile({
   file,
   previewUrl,
   label,
+  sizeLimit,
   onFile,
 }: {
   icon: React.ReactNode;
@@ -433,6 +434,7 @@ function UploadTile({
   file: File | null;
   previewUrl?: string | null;
   label: string;
+  sizeLimit?: string;
   onFile: (f: File | null) => void;
 }) {
   return (
@@ -450,7 +452,10 @@ function UploadTile({
           <p className="text-[12px] text-slate-600">
             <span className="font-medium text-primary underline">Click to upload</span> {label}
           </p>
-          {file && <p className="text-[11px] text-slate-500">{file.name}</p>}
+          {file
+            ? <p className="text-[11px] text-slate-500">{file.name}</p>
+            : sizeLimit && <p className="text-[11px] text-slate-400">{sizeLimit}</p>
+          }
           <Upload size={12} className="text-slate-400" />
         </>
       )}
