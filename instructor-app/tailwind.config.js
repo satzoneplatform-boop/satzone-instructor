@@ -60,6 +60,29 @@ export default {
         // satzone card and dropdown shadows
         card:     "0 1px 2px 0 rgba(15,23,43,0.04), 0 1px 3px 0 rgba(15,23,43,0.05)",
         dropdown: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(15,23,43,0.10)",
+        glow:     "0 0 24px rgba(97,95,255,0.25)",
+      },
+
+      animation: {
+        "fade-up": "fadeUp 0.5s ease-out both",
+        "fade-in": "fadeIn 0.4s ease-out both",
+        "blob":    "blob 9s ease-in-out infinite",
+      },
+
+      keyframes: {
+        fadeUp: {
+          from: { opacity: "0", transform: "translateY(14px)" },
+          to:   { opacity: "1", transform: "translateY(0)" },
+        },
+        fadeIn: {
+          from: { opacity: "0" },
+          to:   { opacity: "1" },
+        },
+        blob: {
+          "0%, 100%": { transform: "translate(0px, 0px) scale(1)" },
+          "33%":      { transform: "translate(40px, -30px) scale(1.08)" },
+          "66%":      { transform: "translate(-25px, 22px) scale(0.94)" },
+        },
       },
     },
   },

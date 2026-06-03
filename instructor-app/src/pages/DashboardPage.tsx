@@ -50,7 +50,9 @@ export function DashboardPage() {
       <div className="grid grid-cols-4 gap-6">
         {statsLoading && stats.length === 0
           ? Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
-          : stats.map((s) => <StatCard key={s.label} {...s} />)
+          : stats.map((s, i) => (
+              <StatCard key={s.label} {...s} style={{ animationDelay: `${i * 80}ms` }} />
+            ))
         }
       </div>
 

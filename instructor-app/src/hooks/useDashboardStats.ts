@@ -12,10 +12,10 @@ type Stat = {
 };
 
 const STAT_CONFIG: Omit<Stat, "value">[] = [
-  { label: "Total Students", delta: "—", deltaUp: true,  icon: "students", bg: "bg-violet-50",   iconColor: "text-primary"     },
-  { label: "Total Courses",  delta: "—", deltaUp: true,  icon: "book",     bg: "bg-sky-50",      iconColor: "text-blue-500"    },
-  { label: "Total Lessons",  delta: "—", deltaUp: true,  icon: "video",    bg: "bg-positive-50", iconColor: "text-positive-600" },
-  { label: "Total Earnings", delta: "—", deltaUp: true,  icon: "money",    bg: "bg-warn-50",     iconColor: "text-amber-500"   },
+  { label: "Total Students", delta: "—", deltaUp: true, icon: "students", bg: "bg-gradient-to-br from-violet-100 to-violet-50",  iconColor: "text-primary"      },
+  { label: "Total Courses",  delta: "—", deltaUp: true, icon: "book",     bg: "bg-gradient-to-br from-blue-100 to-blue-50",    iconColor: "text-blue-500"     },
+  { label: "Total Lessons",  delta: "—", deltaUp: true, icon: "video",    bg: "bg-gradient-to-br from-green-100 to-green-50",  iconColor: "text-green-600"    },
+  { label: "Total Earnings", delta: "—", deltaUp: true, icon: "money",    bg: "bg-gradient-to-br from-amber-100 to-amber-50",  iconColor: "text-amber-600"    },
 ];
 
 export type OverviewPoint = { name: string; enrollments: number; completions: number; progress: number };

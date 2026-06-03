@@ -562,25 +562,31 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
       </div>
 
       {/* Video preview modal */}
-      {previewLessonId && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-6"
-          onClick={() => setPreviewLessonId(null)}
-        >
-          <div className="w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
-            <HLSPlayer source={{ kind: "lesson", lessonId: previewLessonId }} />
-            <div className="mt-3 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setPreviewLessonId(null)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-[13px] font-medium text-secondary"
-              >
-                <X size={14} /> Close
-              </button>
+      {previewLessonId && (() => {
+        const previewLesson = sections.flatMap(s => s.lessons).find(l => l.id === previewLessonId);
+        const source = previewLesson?.playback_url
+          ? ({ kind: "url" as const, url: previewLesson.playback_url })
+          : ({ kind: "lesson" as const, lessonId: previewLessonId });
+        return (
+          <div
+            className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-6"
+            onClick={() => setPreviewLessonId(null)}
+          >
+            <div className="w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+              <HLSPlayer source={source} />
+              <div className="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setPreviewLessonId(null)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-[13px] font-medium text-secondary"
+                >
+                  <X size={14} /> Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
@@ -792,7 +798,9 @@ function LessonCard({
         </button>
 
         {uploadProgress !== undefined && (
-          <CircularProgress pct={uploadProgress} size={32} strokeWidth={3} />
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-white shadow-sm ring-1 ring-violet-100">
+            <CircularProgress pct={uploadProgress} size={26} strokeWidth={3} trackColor="#e2e8f0" progressColor="#615fff" />
+          </div>
         )}
 
         {lesson.type === "video" && lesson.has_video && lesson.hls_status === "pending" && (
@@ -1009,8 +1017,8 @@ function VideoDropZone({
       )}
 
       {isUploading && (
-        <div className="mb-3 flex items-center gap-4 rounded-xl border border-violet-100 bg-violet-50/40 p-4">
-          <CircularProgress pct={uploadProgress!} size={64} strokeWidth={5} />
+        <div className="mb-3 flex items-center gap-4 rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
+          <CircularProgress pct={uploadProgress!} size={64} strokeWidth={5} trackColor="#e2e8f0" progressColor="#615fff" />
           <div className="flex flex-1 flex-col gap-0.5">
             <span className="text-[13px] font-semibold text-ink">
               {uploadProgress! < 100 ? "Uploading video…" : "Processing…"}

@@ -232,11 +232,14 @@ function Row({
 
 function ProgressBar({ value }: { value: number }) {
   const pct = Math.min(100, Math.max(0, value));
-  const color = pct >= 70 ? "bg-positive-500" : pct >= 35 ? "bg-amber-400" : "bg-danger-400";
+  const gradient =
+    pct >= 70 ? "bg-gradient-to-r from-positive-500 to-green-400"
+    : pct >= 35 ? "bg-gradient-to-r from-amber-400 to-yellow-300"
+    : "bg-gradient-to-r from-danger-500 to-red-400";
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-[72px] overflow-hidden rounded-full bg-violet-100">
-        <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
+        <div className={cn("h-full rounded-full transition-all duration-700", gradient)} style={{ width: `${pct}%` }} />
       </div>
       <span className="min-w-[30px] text-[12px] text-slate-500">{pct}%</span>
     </div>

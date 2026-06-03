@@ -5,7 +5,10 @@ import { mintCoursePreviewPlayback, mintLessonPlayback } from "../api/playback";
 import type { LessonPlaybackResponse } from "../api/types";
 import { ApiError } from "../api/client";
 
-type Source = { kind: "lesson"; lessonId: string } | { kind: "preview"; slug: string };
+type Source =
+  | { kind: "lesson"; lessonId: string }
+  | { kind: "preview"; slug: string }
+  | { kind: "url"; url: string };
 
 /**
  * Plays an instructor's lesson or course-preview video. Mints a short-lived
@@ -65,7 +68,9 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
       if (cancelled) return;
       setMessage(null);
       try {
-        if (source.kind === "preview") {
+        if (source.kind === "url") {
+          await attach(source.url);
+        } else if (source.kind === "preview") {
           const r = await mintCoursePreviewPlayback(source.slug);
           await attach(r.stream_url);
         } else {
@@ -105,7 +110,7 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
         hlsRef.current = null;
       }
     };
-  }, [source.kind, source.kind === "lesson" ? source.lessonId : "", source.kind === "preview" ? source.slug : ""]);
+  }, [source.kind, source.kind === "lesson" ? source.lessonId : "", source.kind === "preview" ? source.slug : "", source.kind === "url" ? source.url : ""]);
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">

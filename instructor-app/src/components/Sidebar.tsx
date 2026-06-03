@@ -68,14 +68,16 @@ export function Sidebar({ collapsed, onToggle }: Props) {
               to={item.to}
               title={collapsed ? item.label : undefined}
               className={cn(
-                "flex items-center gap-2 rounded-lg py-2 text-left transition",
+                "flex items-center gap-2 rounded-lg py-2 text-left transition-all duration-200",
                 collapsed ? "justify-center px-2" : "px-2.5",
-                active ? "bg-violet-50 text-ink" : "text-secondary hover:bg-violet-50/60"
+                active
+                  ? "bg-gradient-to-r from-primary to-violet-400 text-white shadow-glow"
+                  : "text-secondary hover:bg-violet-50/70 hover:text-ink"
               )}
             >
               <item.icon
                 size={20}
-                className={cn("shrink-0", active ? "text-primary" : "text-secondary")}
+                className={cn("shrink-0 transition-colors duration-200", active ? "text-white" : "text-secondary")}
               />
               {!collapsed && (
                 <span className="flex-1 text-[16px] font-medium leading-6">{item.label}</span>
