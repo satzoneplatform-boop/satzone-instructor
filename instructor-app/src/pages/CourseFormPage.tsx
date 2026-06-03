@@ -117,10 +117,11 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
     }
     setSubmitting(true);
     try {
-      const baseCents = form.basePrice ? Math.round(parseFloat(form.basePrice) * 100) : 0;
-      const discountCents = form.discountPct
-        ? Math.max(0, Math.round(baseCents * (1 - parseFloat(form.discountPct) / 100)))
-        : undefined;
+      const baseCents = form.basePrice ? Math.round(parseFloat(form.basePrice) * 100) : undefined;
+      const discountCents =
+        form.discountPct && baseCents
+          ? Math.max(0, Math.round(baseCents * (1 - parseFloat(form.discountPct) / 100)))
+          : undefined;
       const tagList = form.tags
         .split(",")
         .map((t) => t.trim())
