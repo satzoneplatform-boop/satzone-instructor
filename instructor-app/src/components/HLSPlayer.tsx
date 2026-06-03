@@ -29,8 +29,22 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
     function attachDirect(videoUrl: string) {
       const video = videoRef.current;
       if (!video || cancelled) return;
-      // Tear down any previous HLS instance before switching to direct playback.
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+
+      // Show controls immediately while the browser fetches the first bytes.
+      // If loading fails (expired token, 4xx, network), the error event fires
+      // and we surface a message instead of silently showing a black rectangle.
+      const onErr = () => {
+        if (cancelled) return;
+        const code = video.error?.code;
+        const msg =
+          code === MediaError.MEDIA_ERR_NETWORK ? "Network error — check your connection."
+          : code === MediaError.MEDIA_ERR_DECODE  ? "Video format not supported."
+          : "Couldn't load the video. Try refreshing the page.";
+        setState("error");
+        setMessage(msg);
+      };
+      video.addEventListener("error", onErr, { once: true });
       video.src = videoUrl;
       setState("ready");
     }

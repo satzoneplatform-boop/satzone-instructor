@@ -54,10 +54,16 @@ export function CourseDetailPage() {
       .then((c) => mounted && setCourse(c))
       .catch((e) => mounted && setError(e instanceof ApiError ? e.message : "Could not load."))
       .finally(() => mounted && setLoading(false));
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [id]);
+
+  // Re-fetch when media tab opens so preview_playback_url JWT is always fresh.
+  useEffect(() => {
+    if (tab !== "media" || !id) return;
+    let mounted = true;
+    getMyCourse(id).then((c) => { if (mounted) setCourse(c); }).catch(() => {});
+    return () => { mounted = false; };
+  }, [tab, id]);
 
   async function onArchive() {
     if (!course) return;
