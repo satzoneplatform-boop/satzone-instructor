@@ -565,8 +565,22 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
       {previewLessonId && (() => {
         const allLessons = sections.flatMap(s => s.lessons);
         const previewLesson = allLessons.find(l => l.id === previewLessonId);
+
+        // Normalize playback_url: the backend sometimes bakes in its internal
+        // IP address instead of the public API domain. Rewrite to the
+        // configured VITE_API_BASE_URL origin so CORS, JWT validation, and
+        // SSL all go through the same path as every other API request.
+        function normalizeUrl(raw: string): string {
+          const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
+          try {
+            const apiOrigin = new URL(apiBase).origin;
+            const u = new URL(raw);
+            return apiOrigin + u.pathname + u.search;
+          } catch { return raw; }
+        }
+
         const source = previewLesson?.playback_url
-          ? ({ kind: "url" as const, url: previewLesson.playback_url })
+          ? ({ kind: "url" as const, url: normalizeUrl(previewLesson.playback_url) })
           : ({ kind: "lesson" as const, lessonId: previewLessonId });
 
         return (

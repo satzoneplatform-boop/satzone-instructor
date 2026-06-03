@@ -97,7 +97,10 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
           else attachDirect(source.url);
         } else if (source.kind === "preview") {
           const r = await mintCoursePreviewPlayback(source.slug);
-          await attachHls(r.stream_url);
+          // stream_url may be a direct /preview-stream endpoint (not HLS)
+          const isHls = /\.m3u8(\?|$)/i.test(r.stream_url);
+          if (isHls) await attachHls(r.stream_url);
+          else attachDirect(r.stream_url);
         } else {
           const r: LessonPlaybackResponse = await mintLessonPlayback(source.lessonId);
           if (r.hls_status !== "ready" || !r.hls_url) {

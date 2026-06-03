@@ -57,13 +57,6 @@ export function CourseDetailPage() {
     return () => { mounted = false; };
   }, [id]);
 
-  // Re-fetch when media tab opens so preview_playback_url JWT is always fresh.
-  useEffect(() => {
-    if (tab !== "media" || !id) return;
-    let mounted = true;
-    getMyCourse(id).then((c) => { if (mounted) setCourse(c); }).catch(() => {});
-    return () => { mounted = false; };
-  }, [tab, id]);
 
   async function onArchive() {
     if (!course) return;
@@ -421,11 +414,7 @@ function MediaPanel({
         <div className="relative mt-3 overflow-hidden rounded-lg">
           {course.has_preview_video ? (
             <HLSPlayer
-              source={
-                course.preview_playback_url
-                  ? { kind: "url", url: course.preview_playback_url }
-                  : { kind: "preview", slug: course.slug }
-              }
+              source={{ kind: "preview", slug: course.slug }}
               posterUrl={course.thumbnail_url ?? undefined}
             />
           ) : (
