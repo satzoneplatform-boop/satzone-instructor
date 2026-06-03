@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Play } from "lucide-react";
 import { mintCoursePreviewPlayback, mintLessonPlayback } from "../api/playback";
 import type { LessonPlaybackResponse } from "../api/types";
 import { ApiError } from "../api/client";
@@ -21,10 +21,12 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
   const hlsRef = useRef<Hls | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "pending" | "error">("loading");
   const [message, setMessage] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     let pollTimer: number | null = null;
+    setStarted(false);
 
     function attachDirect(videoUrl: string) {
       const video = videoRef.current;
@@ -135,6 +137,13 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
     };
   }, [source.kind, source.kind === "lesson" ? source.lessonId : "", source.kind === "preview" ? source.slug : "", source.kind === "url" ? source.url : ""]);
 
+  function handlePlayClick() {
+    const video = videoRef.current;
+    if (!video) return;
+    setStarted(true);
+    video.play().catch(() => {});
+  }
+
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
       <video
@@ -143,7 +152,10 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
         playsInline
         poster={posterUrl}
         className="h-full w-full bg-black"
+        onPlay={() => setStarted(true)}
       />
+
+      {/* Loading / error overlay */}
       {state !== "ready" && (
         <div className="absolute inset-0 grid place-items-center bg-black/60 text-center text-white">
           <div className="flex flex-col items-center gap-2">
@@ -153,6 +165,19 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
               <Loader2 size={28} className="animate-spin" />
             )}
             <p className="text-[13px]">{message ?? (state === "pending" ? "Processing…" : "Loading…")}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Big play button — shows over the poster until the user clicks play.
+          Makes it obvious this is a video, not a static image. */}
+      {state === "ready" && !started && (
+        <div
+          className="absolute inset-0 flex cursor-pointer items-center justify-center"
+          onClick={handlePlayClick}
+        >
+          <div className="grid h-16 w-16 place-items-center rounded-full bg-black/50 shadow-lg ring-2 ring-white/30 backdrop-blur-sm transition hover:scale-110 hover:bg-black/70">
+            <Play size={28} className="ml-1 text-white" fill="white" />
           </div>
         </div>
       )}
