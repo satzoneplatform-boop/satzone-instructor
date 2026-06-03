@@ -37,7 +37,6 @@ import {
   uploadLessonResource,
   uploadLessonVideoWithProgress,
 } from "../api/instructor";
-import { mintLessonPlayback } from "../api/playback";
 import type { LessonAdminRead, LessonType, SectionAdminRead } from "../api/types";
 import { ApiError } from "../api/client";
 import { HLSPlayer } from "./HLSPlayer";
@@ -88,6 +87,7 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
   const [newSectionTitle, setNewSectionTitle] = useState("");
   const [creatingSection, setCreatingSection] = useState(false);
   const [previewLessonId, setPreviewLessonId] = useState<string | null>(null);
+  const [previewTab, setPreviewTab] = useState<"overview" | "resources">("overview");
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [dragOverSection, setDragOverSection] = useState<string | null>(null);
   const abortControllers = useRef<Record<string, AbortController>>({});
@@ -561,28 +561,176 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
         </button>
       </div>
 
-      {/* Video preview modal */}
+      {/* Full-screen lesson preview — mirrors student LessonPlayerPage */}
       {previewLessonId && (() => {
-        const previewLesson = sections.flatMap(s => s.lessons).find(l => l.id === previewLessonId);
+        const allLessons = sections.flatMap(s => s.lessons);
+        const previewLesson = allLessons.find(l => l.id === previewLessonId);
         const source = previewLesson?.playback_url
           ? ({ kind: "url" as const, url: previewLesson.playback_url })
           : ({ kind: "lesson" as const, lessonId: previewLessonId });
+
         return (
-          <div
-            className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-6"
-            onClick={() => setPreviewLessonId(null)}
-          >
-            <div className="w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
-              <HLSPlayer source={source} />
-              <div className="mt-3 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setPreviewLessonId(null)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-[13px] font-medium text-secondary"
-                >
-                  <X size={14} /> Close
-                </button>
+          <div className="fixed inset-0 z-50 flex flex-col bg-white">
+            {/* Header */}
+            <header className="flex h-14 shrink-0 items-center justify-between border-b border-violet-100 px-5">
+              <div className="flex items-center gap-1.5 text-[13px] text-slate-400">
+                <span className="font-semibold text-ink">Preview</span>
+                <ChevronRight size={13} />
+                <span className="max-w-[380px] truncate text-secondary">
+                  {previewLesson?.title ?? "Lesson"}
+                </span>
               </div>
+              <button
+                type="button"
+                onClick={() => setPreviewLessonId(null)}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-violet-50 hover:text-secondary"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            {/* Body */}
+            <div className="flex min-h-0 flex-1">
+
+              {/* Sidebar — curriculum browser */}
+              <aside className="w-[272px] shrink-0 overflow-y-auto border-r border-violet-100 bg-white">
+                {sections.map((section) => (
+                  <div key={section.id}>
+                    <div className="sticky top-0 z-10 bg-white px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                      {section.title}
+                    </div>
+                    {section.lessons.map((lesson) => {
+                      const Icon = TYPE_META[lesson.type].icon;
+                      const isActive = lesson.id === previewLessonId;
+                      return (
+                        <button
+                          key={lesson.id}
+                          type="button"
+                          onClick={() => {
+                            setPreviewLessonId(lesson.id);
+                            setPreviewTab("overview");
+                          }}
+                          className={cn(
+                            "flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors",
+                            isActive
+                              ? "bg-violet-50 text-primary"
+                              : "text-secondary hover:bg-violet-50/60"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded",
+                              isActive
+                                ? "bg-primary text-white"
+                                : TYPE_META[lesson.type].color
+                            )}
+                          >
+                            <Icon size={12} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className={cn("truncate text-[13px]", isActive ? "font-semibold" : "font-medium")}>
+                              {lesson.title}
+                            </p>
+                            {lesson.duration_seconds > 0 && (
+                              <p className="text-[11px] text-slate-400">{fmtDuration(lesson.duration_seconds)}</p>
+                            )}
+                          </div>
+                          {lesson.hls_status === "ready" && !isActive && (
+                            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-positive-500" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </aside>
+
+              {/* Main content */}
+              <main className="min-w-0 flex-1 overflow-auto bg-slate-50/30 px-6 py-6">
+                <div className="mx-auto max-w-4xl space-y-5">
+
+                  {/* Player */}
+                  <HLSPlayer source={source} />
+
+                  {/* Lesson meta */}
+                  <div>
+                    <h1 className="text-[18px] font-semibold text-ink">
+                      {previewLesson
+                        ? `Lesson ${previewLesson.order}: ${previewLesson.title}`
+                        : "Lesson"}
+                    </h1>
+                    {previewLesson && (
+                      <p className="mt-1 flex items-center gap-2 text-[12px] text-slate-400">
+                        {previewLesson.duration_seconds > 0 && (
+                          <span>{fmtDuration(previewLesson.duration_seconds)}</span>
+                        )}
+                        <span>·</span>
+                        <span>{TYPE_META[previewLesson.type].label}</span>
+                        {previewLesson.is_free_preview && (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                            Free preview
+                          </span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Tabs */}
+                  <div className="border-b border-violet-100">
+                    <nav className="-mb-px flex gap-0">
+                      {(["overview", "resources"] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setPreviewTab(t)}
+                          className={cn(
+                            "border-b-2 px-5 py-2.5 text-[13px] font-medium capitalize transition-colors",
+                            previewTab === t
+                              ? "border-primary text-primary"
+                              : "border-transparent text-slate-500 hover:text-ink"
+                          )}
+                        >
+                          {t === "overview" ? "Overview" : "Resources"}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+
+                  {/* Tab content */}
+                  {previewTab === "overview" && (
+                    <div className="pb-10">
+                      {previewLesson?.description ? (
+                        <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-slate-600">
+                          {previewLesson.description}
+                        </p>
+                      ) : (
+                        <p className="text-[13px] text-slate-400">No description for this lesson.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {previewTab === "resources" && (
+                    <div className="pb-10">
+                      {previewLesson?.resource_url ? (
+                        <a
+                          href={previewLesson.resource_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[13px] font-medium text-secondary shadow-sm hover:bg-violet-50"
+                        >
+                          <Paperclip size={14} /> Download resource
+                        </a>
+                      ) : (
+                        <div className="grid place-items-center rounded-xl border border-dashed border-violet-100 py-14 text-center">
+                          <Paperclip size={24} className="text-slate-300" />
+                          <p className="mt-2 text-[13px] text-slate-400">No resources attached to this lesson.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              </main>
             </div>
           </div>
         );
