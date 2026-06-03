@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Archive, Globe2, Pencil, Plus, Send, Star, Tag, Upload, X } from "lucide-react";
+import { Archive, Globe2, Pencil, Plus, Send, Star, Tag, Trash2, Upload, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { AssessmentsPanel } from "../components/AssessmentsPanel";
@@ -7,6 +7,8 @@ import { CurriculumEditor } from "../components/CurriculumEditor";
 import { HLSPlayer } from "../components/HLSPlayer";
 import {
   archiveMyCourse,
+  deleteCourseThumbnail,
+  deleteCoursePreviewVideo,
   getMyCourse,
   publishMyCourse,
   unpublishMyCourse,
@@ -114,6 +116,30 @@ export function CourseDetailPage() {
       notify(e instanceof ApiError ? e.message : "Upload failed.", "error");
     } finally {
       setVideoPct(null);
+    }
+  }
+
+  async function onDeleteThumbnail() {
+    if (!course) return;
+    try {
+      await deleteCourseThumbnail(course.id);
+      const fresh = await getMyCourse(course.id);
+      setCourse(fresh);
+      notify("Thumbnail removed.", "success");
+    } catch (e) {
+      notify(e instanceof ApiError ? e.message : "Could not delete.", "error");
+    }
+  }
+
+  async function onDeletePreviewVideo() {
+    if (!course) return;
+    try {
+      await deleteCoursePreviewVideo(course.id);
+      const fresh = await getMyCourse(course.id);
+      setCourse(fresh);
+      notify("Preview video removed.", "success");
+    } catch (e) {
+      notify(e instanceof ApiError ? e.message : "Could not delete.", "error");
     }
   }
 
@@ -245,6 +271,8 @@ export function CourseDetailPage() {
                 course={course}
                 onThumbnail={onThumbnail}
                 onPreviewVideo={onPreviewVideo}
+                onDeleteThumbnail={onDeleteThumbnail}
+                onDeletePreviewVideo={onDeletePreviewVideo}
                 thumbPct={thumbPct}
                 videoPct={videoPct}
               />
@@ -312,12 +340,16 @@ function MediaPanel({
   course,
   onThumbnail,
   onPreviewVideo,
+  onDeleteThumbnail,
+  onDeletePreviewVideo,
   thumbPct,
   videoPct,
 }: {
   course: InstructorCourseRead;
   onThumbnail: (f: File) => void;
   onPreviewVideo: (f: File) => void;
+  onDeleteThumbnail: () => void;
+  onDeletePreviewVideo: () => void;
   thumbPct: number | null;
   videoPct: number | null;
 }) {
@@ -338,12 +370,23 @@ function MediaPanel({
             </div>
           )}
         </div>
-        <label className={`mt-3 inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${thumbPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
-          <Upload size={14} /> {thumbPct !== null ? `${thumbPct}%…` : course.thumbnail_url ? "Replace" : "Upload image"}
-          <input type="file" accept="image/*" hidden disabled={thumbPct !== null}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) onThumbnail(f); e.target.value = ""; }}
-          />
-        </label>
+        <div className="mt-3 flex items-center gap-2">
+          <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${thumbPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
+            <Upload size={14} /> {thumbPct !== null ? `${thumbPct}%…` : course.thumbnail_url ? "Replace" : "Upload image"}
+            <input type="file" accept="image/*" hidden disabled={thumbPct !== null}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) onThumbnail(f); e.target.value = ""; }}
+            />
+          </label>
+          {course.thumbnail_url && thumbPct === null && (
+            <button
+              type="button"
+              onClick={onDeleteThumbnail}
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-medium text-danger-500 hover:bg-danger-50"
+            >
+              <Trash2 size={14} /> Delete
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Preview video */}
@@ -363,12 +406,23 @@ function MediaPanel({
             </div>
           )}
         </div>
-        <label className={`mt-3 inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${videoPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
-          <Upload size={14} /> {videoPct !== null ? `${videoPct}%…` : course.has_preview_video ? "Replace" : "Upload video"}
-          <input type="file" accept="video/*" hidden disabled={videoPct !== null}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) onPreviewVideo(f); e.target.value = ""; }}
-          />
-        </label>
+        <div className="mt-3 flex items-center gap-2">
+          <label className={`inline-flex cursor-pointer items-center gap-2 rounded-md bg-violet-50 px-3 py-2 text-[13px] font-medium text-primary hover:bg-violet-100 ${videoPct !== null ? "opacity-50 pointer-events-none" : ""}`}>
+            <Upload size={14} /> {videoPct !== null ? `${videoPct}%…` : course.has_preview_video ? "Replace" : "Upload video"}
+            <input type="file" accept="video/*" hidden disabled={videoPct !== null}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) onPreviewVideo(f); e.target.value = ""; }}
+            />
+          </label>
+          {course.has_preview_video && videoPct === null && (
+            <button
+              type="button"
+              onClick={onDeletePreviewVideo}
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-medium text-danger-500 hover:bg-danger-50"
+            >
+              <Trash2 size={14} /> Delete
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

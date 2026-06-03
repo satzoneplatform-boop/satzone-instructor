@@ -53,14 +53,13 @@ import { AppShell } from "../components/AppShell";
 import { useAuth } from "../auth/AuthContext";
 import {
   changePassword,
-  deleteMyAvatar,
   getNotificationPrefs,
   updateMe,
   updateNotificationPrefs,
-  uploadMyAvatarWithProgress,
 } from "../api/me";
 import { CircularProgress } from "../components/CircularProgress";
 import {
+  deleteMyInstructorAvatar,
   getMyInstructorProfile,
   updateMyInstructorProfile,
   uploadMyInstructorAvatarWithProgress,
@@ -137,37 +136,48 @@ export function SettingsPage() {
   );
 }
 
-/* ============ Combined General tab ============ */
+/* ============ Unified Profile tab ============ */
 
 function CombinedGeneralTab() {
-  return (
-    <div className="flex flex-col gap-8">
-      <GeneralTab />
-      <div className="border-t border-violet-50 pt-6">
-        <ProfileTab />
-      </div>
-      <div className="border-t border-violet-50 pt-6">
-        <SocialLinksTab />
-      </div>
-    </div>
-  );
+  return <UnifiedProfileTab />;
 }
 
-/* ============ General ============ */
-
-function GeneralTab() {
+function UnifiedProfileTab() {
   const { user, refreshUser } = useAuth();
+  const [profile, setProfile] = useState<InstructorProfileRead | null>(null);
+
+  // Identity
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
+  // Instructor info
+  const [title, setTitle] = useState("");
+  const [bio, setBio] = useState("");
+  const [expertiseInput, setExpertiseInput] = useState("");
+  const [expertise, setExpertise] = useState<string[]>([]);
+
+  // Address
   const [country, setCountry] = useState("Bangladesh");
   const [city, setCity] = useState("Dhaka");
   const [address, setAddress] = useState("Mirpur-11, Dhaka 1214, Bangladesh");
   const [postal, setPostal] = useState("1214");
+
+  // Social links
+  const [linkedin, setLinkedin] = useState("");
+  const [twitter, setTwitter] = useState("");
+  const [website, setWebsite] = useState("");
+  const [facebook, setFacebook] = useState("https://facebook.com/");
+  const [instagram, setInstagram] = useState("https://instagram.com/");
+  const [youtube, setYoutube] = useState("https://youtube.com/");
+
+  // Avatar
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPct, setAvatarPct] = useState<number | null>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+
+  // Form state
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
@@ -178,177 +188,12 @@ function GeneralTab() {
     setLastName(rest.join(" "));
     setEmail(user.email);
     setPhone(user.phone_number ?? "");
-    setAvatarUrl(user.avatar_url ?? "");
   }, [user]);
-
-  const avatarPreview = useMemo(() => {
-    if (avatarFile) return URL.createObjectURL(avatarFile);
-    return avatarUrl;
-  }, [avatarFile, avatarUrl]);
-
-  async function onPickAvatar(file: File) {
-    setAvatarFile(file);
-    setBusy(true);
-    setAvatarPct(0);
-    setMsg(null);
-    try {
-      const r = await uploadMyAvatarWithProgress(file, setAvatarPct);
-      setAvatarUrl(r.url);
-      setAvatarFile(null);
-      await refreshUser();
-      setMsg({ kind: "ok", text: "Avatar uploaded." });
-    } catch (e) {
-      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Upload failed." });
-    } finally {
-      setBusy(false);
-      setAvatarPct(null);
-    }
-  }
-
-  async function onDeleteAvatar() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      await deleteMyAvatar();
-      setAvatarFile(null);
-      setAvatarUrl("");
-      await refreshUser();
-      setMsg({ kind: "ok", text: "Avatar removed." });
-    } catch (e) {
-      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not delete." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setMsg(null);
-    try {
-      const full_name = [firstName, lastName].filter(Boolean).join(" ").trim();
-      await updateMe({ full_name });
-      await refreshUser();
-      setMsg({ kind: "ok", text: "Saved." });
-    } catch (e) {
-      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not save." });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <form onSubmit={onSubmit}>
-      <TabHeader title="General Setting" />
-
-      <div className="mt-4 flex items-center gap-4 border-b border-violet-50 pb-5">
-        <div className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-violet-50">
-          {avatarPreview ? (
-            <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <Camera size={20} className="text-slate-400" />
-          )}
-          {avatarPct !== null && (
-            <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40">
-              <CircularProgress
-                pct={avatarPct}
-                size={48}
-                strokeWidth={3}
-                trackColor="rgba(255,255,255,0.3)"
-                progressColor="#fff"
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex flex-1 items-center gap-3">
-          <span className="text-[12px] text-slate-500">
-            We only support .JPG, .JPEG, or .PNG file.
-          </span>
-          <label className="ml-auto cursor-pointer rounded-lg bg-violet-50 px-4 py-2 text-[13px] font-medium text-primary hover:bg-violet-100">
-            {busy ? "Uploading…" : "Upload Photo"}
-            <input
-              type="file"
-              accept="image/*"
-              hidden
-              disabled={busy}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                const f = e.target.files?.[0];
-                if (f) void onPickAvatar(f);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={onDeleteAvatar}
-            disabled={busy || !avatarUrl}
-            className="text-[13px] font-medium text-danger-500 disabled:opacity-50"
-          >
-            Delete Photo
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
-        <Field label="First Name">
-          <InputWithIcon icon={<User size={14} />} value={firstName} onChange={setFirstName} />
-        </Field>
-        <Field label="Last Name">
-          <InputWithIcon icon={<User size={14} />} value={lastName} onChange={setLastName} />
-        </Field>
-        <Field label="Email">
-          <InputWithIcon icon={<Mail size={14} />} value={email} onChange={setEmail} disabled />
-        </Field>
-        <Field label="Phone Number">
-          <InputWithIcon icon={<Phone size={14} />} value={phone} onChange={setPhone} />
-        </Field>
-      </div>
-
-      <h3 className="mt-6 text-[16px] font-semibold text-ink">Personal Address</h3>
-      <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-4">
-        <Field label="Country">
-          <CountrySelect value={country} onChange={setCountry} />
-        </Field>
-        <Field label="City">
-          <InputWithIcon icon={null} value={city} onChange={setCity} />
-        </Field>
-        <Field label="Address">
-          <InputWithIcon icon={<MapPin size={14} />} value={address} onChange={setAddress} />
-        </Field>
-        <Field label="Postal Code">
-          <InputWithIcon icon={<Globe size={14} />} value={postal} onChange={setPostal} />
-        </Field>
-      </div>
-
-      <ActionRow msg={msg} busy={busy} saveLabel="Save" />
-    </form>
-  );
-}
-
-/* ============ Instructor Profile ============ */
-
-function ProfileTab() {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<InstructorProfileRead | null>(null);
-  const [name, setName] = useState("");
-  const [title, setTitle] = useState("");
-  const [bio, setBio] = useState("");
-  const [expertiseInput, setExpertiseInput] = useState("");
-  const [expertise, setExpertise] = useState<string[]>([]);
-  const [linkedin, setLinkedin] = useState("");
-  const [twitter, setTwitter] = useState("");
-  const [website, setWebsite] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [avatarPct, setAvatarPct] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [avatarBusy, setAvatarBusy] = useState(false);
-  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   useEffect(() => {
     getMyInstructorProfile()
       .then((p) => {
         setProfile(p);
-        setName(p.name ?? user?.full_name ?? "");
         setTitle(p.title ?? "");
         setBio(p.bio ?? "");
         setExpertise(p.expertise ?? []);
@@ -357,11 +202,17 @@ function ProfileTab() {
         setWebsite(p.website_url ?? "");
         setAvatarUrl(p.avatar_url ?? "");
       })
-      .catch(() => {
-        // Profile may not exist yet — prefill from user account
-        setName(user?.full_name ?? "");
-      });
-  }, [user]);
+      .catch(() => {});
+    try {
+      const raw = localStorage.getItem("studyq.social");
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved.facebook)  setFacebook(saved.facebook);
+        if (saved.instagram) setInstagram(saved.instagram);
+        if (saved.youtube)   setYoutube(saved.youtube);
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   async function onPickAvatar(file: File) {
     setAvatarBusy(true);
@@ -370,12 +221,26 @@ function ProfileTab() {
     try {
       const r = await uploadMyInstructorAvatarWithProgress(file, setAvatarPct);
       setAvatarUrl(r.url);
-      setMsg({ kind: "ok", text: "Profile photo updated." });
+      setMsg({ kind: "ok", text: "Photo updated." });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Upload failed." });
     } finally {
       setAvatarBusy(false);
       setAvatarPct(null);
+    }
+  }
+
+  async function onDeleteAvatar() {
+    setAvatarBusy(true);
+    setMsg(null);
+    try {
+      await deleteMyInstructorAvatar();
+      setAvatarUrl("");
+      setMsg({ kind: "ok", text: "Photo removed." });
+    } catch (e) {
+      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not delete." });
+    } finally {
+      setAvatarBusy(false);
     }
   }
 
@@ -395,18 +260,24 @@ function ProfileTab() {
     setBusy(true);
     setMsg(null);
     try {
-      await updateMyInstructorProfile({
-        name: name.trim() || undefined,
-        title: title.trim() || undefined,
-        bio: bio.trim() || undefined,
-        expertise: expertise.length ? expertise : undefined,
-        linkedin_url: linkedin.trim() || undefined,
-        twitter_url: twitter.trim() || undefined,
-        website_url: website.trim() || undefined,
-      });
+      const full_name = [firstName, lastName].filter(Boolean).join(" ").trim();
+      await Promise.all([
+        updateMe({ full_name }),
+        updateMyInstructorProfile({
+          name: full_name || undefined,
+          title: title.trim() || undefined,
+          bio: bio.trim() || undefined,
+          expertise: expertise.length ? expertise : undefined,
+          linkedin_url: linkedin.trim() || undefined,
+          twitter_url: twitter.trim() || undefined,
+          website_url: website.trim() || undefined,
+        }),
+      ]);
+      localStorage.setItem("studyq.social", JSON.stringify({ facebook, instagram, youtube }));
+      await refreshUser();
       setMsg({ kind: "ok", text: "Profile saved." });
     } catch (e) {
-      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not save profile." });
+      setMsg({ kind: "err", text: e instanceof ApiError ? e.message : "Could not save." });
     } finally {
       setBusy(false);
     }
@@ -414,10 +285,7 @@ function ProfileTab() {
 
   return (
     <form onSubmit={onSubmit}>
-      <TabHeader
-        title="Instructor Profile"
-        subtitle="This is your public instructor page visible to students"
-      />
+      <TabHeader title="Profile" subtitle="Your public instructor page visible to students" />
 
       {/* Avatar */}
       <div className="mt-5 flex items-center gap-4 border-b border-violet-50 pb-5">
@@ -431,16 +299,10 @@ function ProfileTab() {
           </div>
           {avatarPct !== null && (
             <div className="absolute inset-0 grid place-items-center rounded-full bg-black/40">
-              <CircularProgress
-                pct={avatarPct}
-                size={52}
-                strokeWidth={3}
-                trackColor="rgba(255,255,255,0.3)"
-                progressColor="#fff"
-              />
+              <CircularProgress pct={avatarPct} size={52} strokeWidth={3} trackColor="rgba(255,255,255,0.3)" progressColor="#fff" />
             </div>
           )}
-          {profile && avatarPct === null && (
+          {profile && !avatarBusy && avatarUrl && (
             <span className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-positive-500 text-white">
               <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
                 <path d="M1 3.5L4 6.5L9 1.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -455,7 +317,7 @@ function ProfileTab() {
               : "Upload a professional photo for your public profile"}
           </span>
           <label className="ml-auto cursor-pointer rounded-lg bg-violet-50 px-4 py-2 text-[13px] font-medium text-primary hover:bg-violet-100">
-            {avatarBusy ? "Uploading…" : "Change Photo"}
+            {avatarBusy && avatarPct !== null ? "Uploading…" : "Upload Photo"}
             <input
               type="file"
               accept="image/*"
@@ -468,14 +330,35 @@ function ProfileTab() {
               }}
             />
           </label>
+          <button
+            type="button"
+            onClick={onDeleteAvatar}
+            disabled={avatarBusy || !avatarUrl}
+            className="text-[13px] font-medium text-danger-500 disabled:opacity-50"
+          >
+            Delete Photo
+          </button>
         </div>
       </div>
 
-      {/* Core fields */}
+      {/* Identity */}
       <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
-        <Field label="Display Name">
-          <InputWithIcon icon={<User size={14} />} value={name} onChange={setName} placeholder="Your full name" />
+        <Field label="First Name">
+          <InputWithIcon icon={<User size={14} />} value={firstName} onChange={setFirstName} />
         </Field>
+        <Field label="Last Name">
+          <InputWithIcon icon={<User size={14} />} value={lastName} onChange={setLastName} />
+        </Field>
+        <Field label="Email">
+          <InputWithIcon icon={<Mail size={14} />} value={email} onChange={setEmail} disabled />
+        </Field>
+        <Field label="Phone Number">
+          <InputWithIcon icon={<Phone size={14} />} value={phone} onChange={setPhone} />
+        </Field>
+      </div>
+
+      {/* Instructor info */}
+      <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
         <Field label="Title / Role">
           <InputWithIcon icon={<Briefcase size={14} />} value={title} onChange={setTitle} placeholder="e.g. Senior Web Developer" />
         </Field>
@@ -499,12 +382,7 @@ function ProfileTab() {
       <div className="mt-4">
         <Field label="Expertise">
           <div className="flex gap-2">
-            <InputWithIcon
-              icon={null}
-              value={expertiseInput}
-              onChange={setExpertiseInput}
-              placeholder="e.g. React, Node.js, Python"
-            />
+            <InputWithIcon icon={null} value={expertiseInput} onChange={setExpertiseInput} placeholder="e.g. React, Node.js, Python" />
             <button
               type="button"
               onClick={addExpertiseTag}
@@ -516,23 +394,32 @@ function ProfileTab() {
           {expertise.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {expertise.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-[12px] font-medium text-primary"
-                >
+                <span key={tag} className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-[12px] font-medium text-primary">
                   {tag}
-                  <button
-                    type="button"
-                    onClick={() => removeExpertiseTag(tag)}
-                    className="text-primary/60 hover:text-danger-500"
-                    aria-label={`Remove ${tag}`}
-                  >
+                  <button type="button" onClick={() => removeExpertiseTag(tag)} className="text-primary/60 hover:text-danger-500" aria-label={`Remove ${tag}`}>
                     <X size={12} />
                   </button>
                 </span>
               ))}
             </div>
           )}
+        </Field>
+      </div>
+
+      {/* Address */}
+      <h3 className="mt-6 text-[15px] font-semibold text-ink">Personal Address</h3>
+      <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-4">
+        <Field label="Country">
+          <CountrySelect value={country} onChange={setCountry} />
+        </Field>
+        <Field label="City">
+          <InputWithIcon icon={null} value={city} onChange={setCity} />
+        </Field>
+        <Field label="Address">
+          <InputWithIcon icon={<MapPin size={14} />} value={address} onChange={setAddress} />
+        </Field>
+        <Field label="Postal Code">
+          <InputWithIcon icon={<Globe size={14} />} value={postal} onChange={setPostal} />
         </Field>
       </div>
 
@@ -548,6 +435,15 @@ function ProfileTab() {
         <Field label="Website">
           <InputWithIcon icon={<Globe size={14} />} value={website} onChange={setWebsite} placeholder="https://yourwebsite.com" />
         </Field>
+        <Field label="Facebook">
+          <InputWithIcon icon={<Facebook size={14} />} value={facebook} onChange={setFacebook} placeholder="https://facebook.com/yourname" />
+        </Field>
+        <Field label="Instagram">
+          <InputWithIcon icon={<Instagram size={14} />} value={instagram} onChange={setInstagram} placeholder="https://instagram.com/yourname" />
+        </Field>
+        <Field label="YouTube">
+          <InputWithIcon icon={<Youtube size={14} />} value={youtube} onChange={setYoutube} placeholder="https://youtube.com/yourchannel" />
+        </Field>
       </div>
 
       <ActionRow msg={msg} busy={busy} saveLabel="Save Profile" />
@@ -556,64 +452,6 @@ function ProfileTab() {
 }
 
 
-
-
-
-
-/* ============ Social Links ============ */
-
-function SocialLinksTab() {
-  const [links, setLinks] = useState({
-    facebook:  "https://facebook.com/",
-    twitter:   "https://twitter.com/",
-    instagram: "https://instagram.com/",
-    youtube:   "https://youtube.com/",
-  });
-  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("studyq.social");
-      if (raw) setLinks(JSON.parse(raw));
-    } catch { /* ignore */ }
-  }, []);
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    try {
-      localStorage.setItem("studyq.social", JSON.stringify(links));
-      setMsg({ kind: "ok", text: "Social links saved." });
-    } catch {
-      setMsg({ kind: "err", text: "Could not save." });
-    }
-  }
-
-  const FIELDS: { key: keyof typeof links; label: string; icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
-    { key: "facebook",  label: "Facebook",  icon: Facebook },
-    { key: "twitter",   label: "Twitter",   icon: Twitter },
-    { key: "instagram", label: "Instagram", icon: Instagram },
-    { key: "youtube",   label: "YouTube",   icon: Youtube },
-  ];
-
-  return (
-    <form onSubmit={onSubmit}>
-      <TabHeader title="Social Links" subtitle="These social profiles may appear on your public page" />
-      <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4">
-        {FIELDS.map((f) => (
-          <Field key={f.key} label={f.label}>
-            <InputWithIcon
-              icon={<f.icon size={14} />}
-              value={links[f.key]}
-              onChange={(v) => setLinks((s) => ({ ...s, [f.key]: v }))}
-              placeholder={`https://${f.key}.com/yourname`}
-            />
-          </Field>
-        ))}
-      </div>
-      <ActionRow msg={msg} busy={false} saveLabel="Save Links" />
-    </form>
-  );
-}
 
 /* ============ Security (Password + Notifications) ============ */
 

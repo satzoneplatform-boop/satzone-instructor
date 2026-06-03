@@ -145,6 +145,26 @@ export function uploadMyInstructorAvatarWithProgress(
   return uploadWithProgress<UploadResponse>("/instructor/me/profile/avatar", file, onProgress);
 }
 
+export function deleteMyInstructorAvatar() {
+  return api<void>("/instructor/me/profile/avatar", { method: "DELETE" });
+}
+
+export function deleteCourseThumbnail(courseId: string) {
+  return api<void>(`/instructor/courses/${courseId}/thumbnail`, { method: "DELETE" });
+}
+
+export function deleteCoursePreviewVideo(courseId: string) {
+  return api<void>(`/instructor/courses/${courseId}/preview-video`, { method: "DELETE" });
+}
+
+export function deleteLessonVideo(lessonId: string) {
+  return api<LessonAdminRead>(`/instructor/lessons/${lessonId}/video`, { method: "DELETE" });
+}
+
+export function deleteLessonResource(lessonId: string) {
+  return api<LessonAdminRead>(`/instructor/lessons/${lessonId}/resource`, { method: "DELETE" });
+}
+
 // ============= Sections =============
 
 export function listSections(courseId: string) {

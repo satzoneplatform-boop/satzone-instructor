@@ -25,6 +25,8 @@ import {
   createLesson,
   createSection,
   deleteLesson,
+  deleteLessonResource,
+  deleteLessonVideo,
   deleteSection,
   listLessons,
   listSections,
@@ -247,6 +249,28 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
       ));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Upload failed.");
+    }
+  }
+
+  async function onDeleteVideo(sectionId: string, lessonId: string) {
+    try {
+      const next = await deleteLessonVideo(lessonId);
+      setSections((cur) => cur.map((s) =>
+        s.id === sectionId ? { ...s, lessons: s.lessons.map((l) => l.id === lessonId ? next : l) } : s
+      ));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not delete video.");
+    }
+  }
+
+  async function onDeleteResource(sectionId: string, lessonId: string) {
+    try {
+      const next = await deleteLessonResource(lessonId);
+      setSections((cur) => cur.map((s) =>
+        s.id === sectionId ? { ...s, lessons: s.lessons.map((l) => l.id === lessonId ? next : l) } : s
+      ));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not delete attachment.");
     }
   }
 
@@ -489,6 +513,8 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
                           onUpdate={(patch) => onUpdateLesson(sec.id, lesson.id, patch)}
                           onUploadVideo={(file) => onUploadVideo(sec.id, lesson.id, file)}
                           onUploadResource={(file) => onUploadResource(sec.id, lesson.id, file)}
+                          onDeleteVideo={() => onDeleteVideo(sec.id, lesson.id)}
+                          onDeleteResource={() => onDeleteResource(sec.id, lesson.id)}
                           onPreview={() => setPreviewLessonId(lesson.id)}
                           onMoveUp={() => onMoveLessonUp(sec.id, lIdx)}
                           onMoveDown={() => onMoveLessonDown(sec.id, lIdx)}
@@ -669,6 +695,8 @@ function LessonCard({
   onUpdate,
   onUploadVideo,
   onUploadResource,
+  onDeleteVideo,
+  onDeleteResource,
   onPreview,
   onMoveUp,
   onMoveDown,
@@ -683,6 +711,8 @@ function LessonCard({
   onUpdate: (patch: Partial<LessonAdminRead>) => void;
   onUploadVideo: (file: File) => void;
   onUploadResource: (file: File) => void;
+  onDeleteVideo: () => void;
+  onDeleteResource: () => void;
   onPreview: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -791,6 +821,8 @@ function LessonCard({
           onUpdate={onUpdate}
           onUploadVideo={onUploadVideo}
           onUploadResource={onUploadResource}
+          onDeleteVideo={onDeleteVideo}
+          onDeleteResource={onDeleteResource}
         />
       )}
     </div>
@@ -805,12 +837,16 @@ function LessonExpandPanel({
   onUpdate,
   onUploadVideo,
   onUploadResource,
+  onDeleteVideo,
+  onDeleteResource,
 }: {
   lesson: LessonAdminRead;
   uploadProgress?: number;
   onUpdate: (patch: Partial<LessonAdminRead>) => void;
   onUploadVideo: (file: File) => void;
   onUploadResource: (file: File) => void;
+  onDeleteVideo: () => void;
+  onDeleteResource: () => void;
 }) {
   const [desc, setDesc] = useState(lesson.description ?? "");
   const [article, setArticle] = useState(lesson.article_content ?? "");
@@ -862,6 +898,7 @@ function LessonExpandPanel({
           lesson={lesson}
           uploadProgress={uploadProgress}
           onFile={onUploadVideo}
+          onDelete={onDeleteVideo}
         />
       )}
 
@@ -879,7 +916,7 @@ function LessonExpandPanel({
       )}
 
       {lesson.type === "resource" && (
-        <ResourceDropZone lesson={lesson} onFile={onUploadResource} />
+        <ResourceDropZone lesson={lesson} onFile={onUploadResource} onDelete={onDeleteResource} />
       )}
 
       <div className="flex items-center gap-3">
@@ -903,10 +940,12 @@ function VideoDropZone({
   lesson,
   uploadProgress,
   onFile,
+  onDelete,
 }: {
   lesson: LessonAdminRead;
   uploadProgress?: number;
   onFile: (file: File) => void;
+  onDelete: () => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -943,6 +982,14 @@ function VideoDropZone({
               <span className="ml-2 text-slate-400">({fmtDuration(lesson.duration_seconds)})</span>
             )}
           </div>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="grid h-7 w-7 place-items-center rounded text-slate-400 hover:bg-danger-50 hover:text-danger-500"
+            title="Delete video"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
       )}
 
@@ -1008,9 +1055,11 @@ function VideoDropZone({
 function ResourceDropZone({
   lesson,
   onFile,
+  onDelete,
 }: {
   lesson: LessonAdminRead;
   onFile: (file: File) => void;
+  onDelete: () => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
 
@@ -1031,6 +1080,14 @@ function ResourceDropZone({
             {lesson.resource_url.split("/").pop() ?? "Download file"}
           </a>
           <CheckCircle2 size={14} className="text-positive-600" />
+          <button
+            type="button"
+            onClick={onDelete}
+            className="grid h-6 w-6 place-items-center rounded text-slate-400 hover:bg-danger-50 hover:text-danger-500"
+            title="Delete attachment"
+          >
+            <Trash2 size={13} />
+          </button>
         </div>
       )}
       <label
