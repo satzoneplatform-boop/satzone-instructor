@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Archive, Globe2, Pencil, Plus, Send, Star, Tag, Trash2, Upload, X, Zap } from "lucide-react";
+import { Archive, Globe2, Pencil, Plus, Send, Star, Tag, Trash2, Upload, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { AssessmentsPanel } from "../components/AssessmentsPanel";
+import { PracticePackPanel } from "./PracticePackPage";
 import { CurriculumEditor } from "../components/CurriculumEditor";
 import { HLSPlayer } from "../components/HLSPlayer";
 import {
@@ -22,12 +23,13 @@ import { useAuth } from "../auth/AuthContext";
 import type { InstructorCourseRead } from "../api/types";
 import { cn } from "../lib/cn";
 
-type Tab = "overview" | "curriculum" | "assessments" | "media";
+type Tab = "overview" | "curriculum" | "assessments" | "practice" | "media";
 
 const TAB_HEADINGS: Record<Tab, string> = {
   overview: "Course Overview",
   curriculum: "Curriculum",
   assessments: "Assessments",
+  practice: "Practice Pack",
   media: "Media",
 };
 
@@ -184,13 +186,6 @@ export function CourseDetailPage() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => nav(`/courses/${course.id}/practice`)}
-            className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[14px] font-medium text-secondary"
-          >
-            <Zap size={14} /> Practice pack
-          </button>
-          <button
-            type="button"
             onClick={() => nav(`/courses/${course.id}/edit`)}
             className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[14px] font-medium text-secondary"
           >
@@ -260,7 +255,7 @@ export function CourseDetailPage() {
           </div>
 
           <nav className="mt-5 flex items-center gap-6 border-b border-violet-100">
-            {(["overview", "curriculum", "assessments", "media"] as const).map((t) => (
+            {(["overview", "curriculum", "assessments", "practice", "media"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
@@ -282,6 +277,7 @@ export function CourseDetailPage() {
             {tab === "overview" && <OverviewPanel course={course} />}
             {tab === "curriculum" && <CurriculumEditor courseId={course.id} />}
             {tab === "assessments" && <AssessmentsPanel courseId={course.id} />}
+            {tab === "practice" && <PracticePackPanel courseId={course.id} />}
             {tab === "media" && (
               <MediaPanel
                 course={course}

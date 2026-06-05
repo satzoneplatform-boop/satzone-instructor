@@ -47,13 +47,14 @@ type AddQuizForm = {
 };
 
 function AddQuizModal({
+  courseId,
   onClose,
   onSaved,
 }: {
+  courseId: string;
   onClose: () => void;
   onSaved: (quiz: PracticeQuizSummary) => void;
 }) {
-  const { id: courseId } = useParams<{ id: string }>();
   const [form, setForm] = useState<AddQuizForm>({
     title: "",
     description: "",
@@ -68,7 +69,6 @@ function AddQuizModal({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!courseId) return;
     if (!form.title.trim()) {
       setError("Title is required.");
       return;
@@ -180,20 +180,20 @@ function AddQuizModal({
 // ---------------------------------------------------------------------------
 
 function PackMetaEditor({
+  courseId,
   pack,
   onSaved,
 }: {
+  courseId: string;
   pack: PracticePackInstructorRead;
   onSaved: (next: PracticePackInstructorRead) => void;
 }) {
-  const { id: courseId } = useParams<{ id: string }>();
   const { notify } = useToast();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: pack.title ?? "", description: pack.description ?? "" });
   const [busy, setBusy] = useState(false);
 
   async function save() {
-    if (!courseId) return;
     setBusy(true);
     try {
       const next = await updatePracticePack(courseId, {
@@ -333,11 +333,10 @@ function ConfirmDeleteModal({
 }
 
 // ---------------------------------------------------------------------------
-// Main page
+// Panel — embeddable in CourseDetailPage tab
 // ---------------------------------------------------------------------------
 
-export function PracticePackPage() {
-  const { id: courseId } = useParams<{ id: string }>();
+export function PracticePackPanel({ courseId }: { courseId: string }) {
   const nav = useNavigate();
   const { notify } = useToast();
 
@@ -350,7 +349,6 @@ export function PracticePackPage() {
   const [reordering, setReordering] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!courseId) return;
     let mounted = true;
     setLoading(true);
     getPracticePack(courseId)
@@ -393,7 +391,6 @@ export function PracticePackPage() {
     const newOrder = swapWith.order;
     const oldOrder = quiz.order;
 
-    // Optimistic update
     setPack((p) =>
       p
         ? {
@@ -412,7 +409,6 @@ export function PracticePackPage() {
       await updatePracticeQuiz(quiz.id, { order: newOrder });
       await updatePracticeQuiz(swapWith.id, { order: oldOrder });
     } catch (e) {
-      // Rollback
       setPack((p) =>
         p
           ? {
@@ -441,83 +437,60 @@ export function PracticePackPage() {
   }
 
   if (loading) {
-    return (
-      <AppShell>
-        <p className="text-[14px] text-slate-500">Loading…</p>
-      </AppShell>
-    );
+    return <p className="py-8 text-center text-[14px] text-slate-400">Loading…</p>;
   }
 
   if (error || !pack) {
     return (
-      <AppShell>
-        <div className="rounded-lg bg-danger-50 p-4 text-[13px] text-danger-500">
-          {error ?? "Practice pack not found."}
-        </div>
-      </AppShell>
+      <div className="rounded-lg bg-danger-50 p-4 text-[13px] text-danger-500">
+        {error ?? "Practice pack not found."}
+      </div>
     );
   }
 
   const sorted = [...pack.quizzes].sort((a, b) => a.order - b.order);
 
   return (
-    <AppShell>
-      {/* Header */}
-      <div className="mb-6 flex items-end justify-between">
-        <div>
-          <button
-            type="button"
-            onClick={() => nav(`/courses/${courseId}`)}
-            className="mb-2 inline-flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-secondary"
-          >
-            <ArrowLeft size={14} /> Back to course
-          </button>
-          <h1 className="text-[20px] font-bold text-ink">Practice Pack</h1>
-          <p className="mt-0.5 text-[14px] text-slate-500">
-            Short drill quizzes for enrolled students
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[14px] font-medium text-white hover:bg-violet-600"
-        >
-          <Plus size={15} /> Add quiz
-        </button>
-      </div>
-
+    <>
       {/* Pack meta */}
-      <div className="mb-6 rounded-2xl bg-white p-5 shadow-sm">
-        <p className="mb-3 text-[12px] font-semibold uppercase tracking-wider text-slate-400">
+      <div className="mb-4 rounded-xl border border-violet-100 p-4">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
           Pack info
         </p>
-        <PackMetaEditor pack={pack} onSaved={setPack} />
+        <PackMetaEditor courseId={courseId} pack={pack} onSaved={setPack} />
       </div>
 
       {/* Quizzes */}
-      <div className="rounded-2xl bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+      <div className="rounded-xl border border-violet-100">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <p className="text-[14px] font-semibold text-ink">
             Quizzes
             <span className="ml-2 rounded-md bg-slate-100 px-2 py-0.5 text-[12px] font-medium text-slate-500">
               {sorted.length}
             </span>
           </p>
+          <button
+            type="button"
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[13px] font-medium text-white hover:bg-violet-600"
+          >
+            <Plus size={13} /> Add quiz
+          </button>
         </div>
 
         {sorted.length === 0 ? (
-          <div className="px-5 py-12 text-center">
+          <div className="px-5 py-10 text-center">
             <p className="text-[14px] text-slate-400">No quizzes yet. Add one to get started.</p>
           </div>
         ) : (
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-slate-100 text-left text-[12px] font-medium text-slate-400">
-                <th className="w-16 px-5 py-3">Order</th>
-                <th className="px-5 py-3">Title</th>
-                <th className="px-5 py-3">Items</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+                <th className="w-16 px-4 py-3">Order</th>
+                <th className="px-4 py-3">Title</th>
+                <th className="px-4 py-3">Items</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -526,8 +499,7 @@ export function PracticePackPage() {
                   key={quiz.id}
                   className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60"
                 >
-                  {/* Order controls */}
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     <div className="flex flex-col items-center gap-0.5">
                       <button
                         type="button"
@@ -549,8 +521,7 @@ export function PracticePackPage() {
                     </div>
                   </td>
 
-                  {/* Title */}
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     <p className="font-medium text-ink">{quiz.title}</p>
                     {quiz.description && (
                       <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-400">
@@ -559,13 +530,11 @@ export function PracticePackPage() {
                     )}
                   </td>
 
-                  {/* Item count */}
-                  <td className="px-5 py-3 text-slate-500">
+                  <td className="px-4 py-3 text-slate-500">
                     {quiz.item_count} item{quiz.item_count !== 1 ? "s" : ""}
                   </td>
 
-                  {/* Status toggle */}
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     <button
                       type="button"
                       disabled={toggling === quiz.id}
@@ -577,8 +546,7 @@ export function PracticePackPage() {
                     </button>
                   </td>
 
-                  {/* Actions */}
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <button
                         type="button"
@@ -603,9 +571,9 @@ export function PracticePackPage() {
         )}
       </div>
 
-      {/* Modals */}
       {showAdd && (
         <AddQuizModal
+          courseId={courseId}
           onClose={() => setShowAdd(false)}
           onSaved={(quiz) => {
             setPack((p) => (p ? { ...p, quizzes: [...p.quizzes, quiz] } : p));
@@ -622,6 +590,36 @@ export function PracticePackPage() {
           onConfirm={() => onDelete(toDelete)}
         />
       )}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Standalone page (kept for direct URL access)
+// ---------------------------------------------------------------------------
+
+export function PracticePackPage() {
+  const { id: courseId } = useParams<{ id: string }>();
+  const nav = useNavigate();
+
+  if (!courseId) return null;
+
+  return (
+    <AppShell>
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => nav(`/courses/${courseId}`)}
+          className="mb-2 inline-flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-secondary"
+        >
+          <ArrowLeft size={14} /> Back to course
+        </button>
+        <h1 className="text-[20px] font-bold text-ink">Practice Pack</h1>
+        <p className="mt-0.5 text-[14px] text-slate-500">
+          Short drill quizzes for enrolled students
+        </p>
+      </div>
+      <PracticePackPanel courseId={courseId} />
     </AppShell>
   );
 }
