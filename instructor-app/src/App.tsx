@@ -18,6 +18,8 @@ import { CoursesListPage } from "./pages/CoursesListPage";
 import { CourseFormPage } from "./pages/CourseFormPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { CourseContentPage } from "./pages/CourseContentPage";
+import { PracticePackPage } from "./pages/PracticePackPage";
+import { PracticeQuizEditorPage } from "./pages/PracticeQuizEditorPage";
 import { TransactionsListPage } from "./pages/TransactionsListPage";
 import { TransactionFormPage } from "./pages/TransactionFormPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
@@ -66,6 +68,8 @@ function AppRoutes() {
       <Route path="/courses/:id" element={<AuthGate mode="authed"><CourseDetailPage /></AuthGate>} />
       <Route path="/courses/:id/content" element={<AuthGate mode="authed"><CourseContentPage /></AuthGate>} />
       <Route path="/courses/:id/edit" element={<AuthGate mode="authed"><CourseFormPage mode="edit" /></AuthGate>} />
+      <Route path="/courses/:id/practice" element={<AuthGate mode="authed"><PracticePackPage /></AuthGate>} />
+      <Route path="/practice/quizzes/:quizId" element={<AuthGate mode="authed"><PracticeQuizEditorPage /></AuthGate>} />
 
       <Route path="/transactions" element={<AuthGate mode="authed"><TransactionsListPage /></AuthGate>} />
       <Route path="/transactions/new" element={<AuthGate mode="authed"><TransactionFormPage /></AuthGate>} />

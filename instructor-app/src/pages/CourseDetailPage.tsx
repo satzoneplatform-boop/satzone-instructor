@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Archive, Globe2, Pencil, Plus, Send, Star, Tag, Trash2, Upload, X } from "lucide-react";
+import { Archive, Globe2, Pencil, Plus, Send, Star, Tag, Trash2, Upload, X, Zap } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
 import { AssessmentsPanel } from "../components/AssessmentsPanel";
@@ -182,6 +182,13 @@ export function CourseDetailPage() {
           <p className="mt-1 text-[14px] text-slate-600">{course.title}</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => nav(`/courses/${course.id}/practice`)}
+            className="inline-flex items-center gap-2 rounded-lg border border-violet-100 bg-white px-4 py-2.5 text-[14px] font-medium text-secondary"
+          >
+            <Zap size={14} /> Practice quizzes
+          </button>
           <button
             type="button"
             onClick={() => nav(`/courses/${course.id}/edit`)}

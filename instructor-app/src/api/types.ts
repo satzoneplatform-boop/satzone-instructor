@@ -513,3 +513,105 @@ export type QuestionCreate = {
 };
 
 export type QuestionUpdate = Partial<Omit<QuestionCreate, "options">>;
+
+// ============= Practice quizzes (Duolingo-style drills) =============
+
+export type MCQOptionWrite = {
+  id: string;
+  text: string;
+  image_url?: string | null;
+  is_correct?: boolean;
+};
+
+export type MCQDataWrite = {
+  type: "mcq";
+  prompt: string;
+  image_url?: string | null;
+  options: MCQOptionWrite[];
+};
+
+export type MatchingPairWrite = {
+  id: string;
+  left: string;
+  right: string;
+};
+
+export type MatchingDataWrite = {
+  type: "matching";
+  prompt: string;
+  pairs: MatchingPairWrite[];
+};
+
+export type PracticeItemWrite = {
+  type: "mcq" | "matching";
+  points?: number;
+  order?: number;
+  data: MCQDataWrite | MatchingDataWrite;
+};
+
+export type MCQDataRead = {
+  type: "mcq";
+  prompt: string;
+  image_url: string | null;
+  options: (MCQOptionWrite & { is_correct: boolean })[];
+};
+
+export type MatchingDataRead = {
+  type: "matching";
+  prompt: string;
+  pairs: MatchingPairWrite[];
+};
+
+export type PracticeItemInstructorRead = {
+  id: string;
+  type: "mcq" | "matching";
+  points: number;
+  order: number;
+  data: MCQDataRead | MatchingDataRead;
+};
+
+export type PracticeQuizSummary = {
+  id: string;
+  title: string;
+  description: string | null;
+  order: number;
+  is_published: boolean;
+  item_count: number;
+};
+
+export type PracticeQuizInstructorRead = {
+  id: string;
+  title: string;
+  description: string | null;
+  order: number;
+  is_published: boolean;
+  item_count: number;
+  items: PracticeItemInstructorRead[];
+};
+
+export type PracticePackInstructorRead = {
+  id: string;
+  course_id: string;
+  title: string | null;
+  description: string | null;
+  quizzes: PracticeQuizSummary[];
+};
+
+export type PracticePackUpdate = {
+  title?: string;
+  description?: string;
+};
+
+export type PracticeQuizCreate = {
+  title: string;
+  description?: string | null;
+  order?: number;
+  is_published?: boolean;
+};
+
+export type PracticeQuizUpdate = {
+  title?: string;
+  description?: string | null;
+  order?: number;
+  is_published?: boolean;
+};

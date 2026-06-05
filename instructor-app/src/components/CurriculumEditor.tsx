@@ -37,6 +37,7 @@ import {
   uploadLessonResource,
   uploadLessonVideoWithProgress,
 } from "../api/instructor";
+import { mintLessonPlayback } from "../api/playback";
 import type { LessonAdminRead, LessonType, SectionAdminRead } from "../api/types";
 import { ApiError } from "../api/client";
 import { HLSPlayer } from "./HLSPlayer";
