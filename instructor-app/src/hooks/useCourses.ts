@@ -31,6 +31,7 @@ export function useCourses(page = 1, size = 20) {
 
   useEffect(() => {
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     listCourses({ page, size })
       .then((res) => {

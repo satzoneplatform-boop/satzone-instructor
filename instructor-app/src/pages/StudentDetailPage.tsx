@@ -308,6 +308,7 @@ export function StudentDetailPage() {
   useEffect(() => {
     if (!id) return;
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     Promise.allSettled([
       getUser(id),

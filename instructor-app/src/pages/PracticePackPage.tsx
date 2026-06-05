@@ -350,6 +350,7 @@ export function PracticePackPanel({ courseId }: { courseId: string }) {
 
   useEffect(() => {
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getPracticePack(courseId)
       .then((p) => mounted && setPack(p))

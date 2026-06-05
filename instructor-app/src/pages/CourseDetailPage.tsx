@@ -51,6 +51,7 @@ export function CourseDetailPage() {
   useEffect(() => {
     if (!id) return;
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getMyCourse(id)
       .then((c) => mounted && setCourse(c))

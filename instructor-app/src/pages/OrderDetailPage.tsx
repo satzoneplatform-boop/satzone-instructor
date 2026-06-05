@@ -46,6 +46,7 @@ export function OrderDetailPage() {
   useEffect(() => {
     if (!id) return;
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
 

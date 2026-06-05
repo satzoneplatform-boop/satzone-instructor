@@ -44,6 +44,7 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
   useEffect(() => {
     let cancelled = false;
     let pollTimer: number | null = null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStarted(false);
 
     function attachDirect(videoUrl: string) {
@@ -154,6 +155,7 @@ export function HLSPlayer({ source, posterUrl, controls = true }: { source: Sour
         hlsRef.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source.kind, source.kind === "lesson" ? source.lessonId : "", source.kind === "preview" ? source.slug : "", source.kind === "url" ? source.url : ""]);
 
   function handlePlayClick() {

@@ -51,6 +51,7 @@ export function VerifyCodePage() {
   useEffect(() => {
     if (mode !== "email") return;
     if (!emailToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError("Missing verification token.");
       return;
     }

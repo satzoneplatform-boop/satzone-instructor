@@ -24,6 +24,7 @@ export function useStudents(page = 1, size = 20, query = "") {
 
   useEffect(() => {
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     async function load() {

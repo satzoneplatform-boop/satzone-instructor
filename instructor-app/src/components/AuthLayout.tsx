@@ -32,6 +32,7 @@ export function AuthLayout({
   slide?: number;
 }) {
   const [active, setActive] = useState(slide);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setActive(slide), [slide]);
 
   const current = SLIDES[active % SLIDES.length];

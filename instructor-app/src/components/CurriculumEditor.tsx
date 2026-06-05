@@ -427,7 +427,7 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
                   type="button"
                   onClick={() => setOpenSections((prev) => {
                     const next = new Set(prev);
-                    isOpen ? next.delete(sec.id) : next.add(sec.id);
+                    if (isOpen) next.delete(sec.id); else next.add(sec.id);
                     return next;
                   })}
                   className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-violet-50"
@@ -513,7 +513,7 @@ export function CurriculumEditor({ courseId }: { courseId: string }) {
                           uploadProgress={progress}
                           onToggleExpand={() => setExpandedLessons((prev) => {
                             const next = new Set(prev);
-                            isExpanded ? next.delete(lesson.id) : next.add(lesson.id);
+                            if (isExpanded) next.delete(lesson.id); else next.add(lesson.id);
                             return next;
                           })}
                           onDelete={() => onDeleteLesson(sec.id, lesson.id)}

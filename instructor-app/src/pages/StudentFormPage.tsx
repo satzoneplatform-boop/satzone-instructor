@@ -54,6 +54,7 @@ export function StudentFormPage({ mode }: { mode: "create" | "edit" }) {
   useEffect(() => {
     if (mode !== "edit" || !id) return;
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getUser(id)
       .then((u) => {

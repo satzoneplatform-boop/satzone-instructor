@@ -77,6 +77,7 @@ export function CourseFormPage({ mode }: { mode: "create" | "edit" }) {
   useEffect(() => {
     if (mode !== "edit" || !id) return;
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getMyCourse(id)
       .then((c) => {

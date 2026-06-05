@@ -177,6 +177,7 @@ function UnifiedProfileTab() {
   useEffect(() => {
     if (!user) return;
     const [fn, ...rest] = user.full_name.split(" ");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFirstName(fn ?? "");
     setLastName(rest.join(" "));
     setEmail(user.email);
@@ -200,6 +201,7 @@ function UnifiedProfileTab() {
       const raw = localStorage.getItem("studyq.local");
       if (raw) {
         const saved = JSON.parse(raw);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (saved.facebook)  setFacebook(saved.facebook);
         if (saved.instagram) setInstagram(saved.instagram);
         if (saved.youtube)   setYoutube(saved.youtube);

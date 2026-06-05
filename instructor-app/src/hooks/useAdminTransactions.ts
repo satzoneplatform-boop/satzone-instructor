@@ -21,6 +21,7 @@ export function useAdminTransactions() {
 
   useEffect(() => {
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     async function load() {

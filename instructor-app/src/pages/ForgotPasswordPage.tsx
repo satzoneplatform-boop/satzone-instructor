@@ -61,7 +61,7 @@ export function ForgotPasswordPage() {
         <SuccessBanner>{success}</SuccessBanner>
 
         <PrimaryButton type="submit" disabled={submitting}>
-          {submitting ? "Sending…" : "Summit"}
+          {submitting ? "Sending…" : "Submit"}
         </PrimaryButton>
 
         <p className="text-center text-[13px] text-slate-500">

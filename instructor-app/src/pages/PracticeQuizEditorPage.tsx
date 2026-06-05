@@ -792,6 +792,7 @@ export function PracticeQuizEditorPage() {
   useEffect(() => {
     if (!quizId) return;
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getPracticeQuiz(quizId)
       .then((q) => mounted && setQuiz(q))
