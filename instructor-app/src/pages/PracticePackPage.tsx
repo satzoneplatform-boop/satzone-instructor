@@ -474,7 +474,7 @@ export function PracticePackPage() {
           </button>
           <h1 className="text-[20px] font-bold text-ink">Practice Pack</h1>
           <p className="mt-0.5 text-[14px] text-slate-500">
-            Duolingo-style drill quizzes for enrolled students
+            Short drill quizzes for enrolled students
           </p>
         </div>
         <button

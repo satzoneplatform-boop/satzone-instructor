@@ -393,7 +393,7 @@ function MatchingForm({
       {/* Prompt */}
       <div>
         <label className="mb-1 block text-[12px] font-medium text-slate-600">
-          Instruction prompt <span className="text-danger-500">*</span>
+          Prompt <span className="text-danger-500">*</span>
         </label>
         <textarea
           value={draft.prompt}
