@@ -1,0 +1,207 @@
+import { useEffect, useRef, useState } from "react";
+import Hls from "hls.js";
+import { AlertCircle, Loader2, Play } from "lucide-react";
+import { mintCoursePreviewPlayback, mintLessonPlayback } from "../api/playback";
+import type { LessonPlaybackResponse } from "../api/types";
+import { ApiError } from "../api/client";
+
+// The backend bakes its internal address (e.g. http://16.171.208.156:8000)
+// into every playback URL. That address is the raw FastAPI port which is not
+// publicly reachable — only the nginx-fronted domain is. Rewrite every stream
+// URL to go through the configured public API origin.
+const _API_ORIGIN = (() => {
+  try { return new URL(import.meta.env.VITE_API_BASE_URL ?? "").origin; }
+  catch { return ""; }
+})();
+
+function normalizeStreamUrl(url: string): string {
+  if (!_API_ORIGIN || !url) return url;
+  try {
+    const u = new URL(url);
+    if (u.origin === _API_ORIGIN) return url; // already correct
+    return _API_ORIGIN + u.pathname + u.search;
+  } catch { return url; }
+}
+
+type Source =
+  | { kind: "lesson"; lessonId: string }
+  | { kind: "preview"; slug: string }
+  | { kind: "url"; url: string };
+
+/**
+ * Plays an instructor's lesson or course-preview video. Mints a short-lived
+ * playback token from the backend, then drives hls.js (or native HLS on Safari).
+ * Refreshes the token automatically when the player reports an HLS error
+ * (typical causes: IP change or token expiry).
+ */
+export function HLSPlayer({ source, posterUrl, controls = true }: { source: Source; posterUrl?: string; controls?: boolean }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "pending" | "error">("loading");
+  const [message, setMessage] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    let pollTimer: number | null = null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStarted(false);
+
+    function attachDirect(videoUrl: string) {
+      const video = videoRef.current;
+      if (!video || cancelled) return;
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+
+      // Show controls immediately while the browser fetches the first bytes.
+      // If loading fails (expired token, 4xx, network), the error event fires
+      // and we surface a message instead of silently showing a black rectangle.
+      const onErr = () => {
+        if (cancelled) return;
+        const code = video.error?.code;
+        const msg =
+          code === MediaError.MEDIA_ERR_NETWORK ? "Network error — check your connection."
+          : code === MediaError.MEDIA_ERR_DECODE  ? "Video format not supported."
+          : "Couldn't load the video. Try refreshing the page.";
+        setState("error");
+        setMessage(msg);
+      };
+      video.addEventListener("error", onErr, { once: true });
+      video.src = videoUrl;
+      setState("ready");
+    }
+
+    async function attachHls(streamUrl: string) {
+      const video = videoRef.current;
+      if (!video || cancelled) return;
+
+      if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        // Safari: native HLS.
+        video.src = streamUrl;
+        setState("ready");
+        return;
+      }
+
+      if (Hls.isSupported()) {
+        if (hlsRef.current) { hlsRef.current.destroy(); }
+        const hls = new Hls();
+        hlsRef.current = hls;
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (!cancelled) setState("ready");
+        });
+        hls.on(Hls.Events.ERROR, (_e, data) => {
+          if (data.fatal) {
+            setMessage("Reconnecting…");
+            setTimeout(() => { if (!cancelled) loadOnce(); }, 400);
+          }
+        });
+        return;
+      }
+
+      setState("error");
+      setMessage("HLS playback isn't supported in this browser.");
+    }
+
+    async function loadOnce() {
+      if (cancelled) return;
+      setMessage(null);
+      try {
+        if (source.kind === "url") {
+          const url = normalizeStreamUrl(source.url);
+          const isHls = /\.m3u8(\?|$)/i.test(url);
+          if (isHls) await attachHls(url);
+          else attachDirect(url);
+        } else if (source.kind === "preview") {
+          const r = await mintCoursePreviewPlayback(source.slug);
+          const url = normalizeStreamUrl(r.stream_url);
+          const isHls = /\.m3u8(\?|$)/i.test(url);
+          if (isHls) await attachHls(url);
+          else attachDirect(url);
+        } else {
+          const r: LessonPlaybackResponse = await mintLessonPlayback(source.lessonId);
+          if (r.hls_status !== "ready" || !r.hls_url) {
+            setState("pending");
+            setMessage(r.hls_status === "failed" ? "Encoding failed. Re-upload the video." : "Encoding… this can take a minute.");
+            if (r.hls_status === "pending") {
+              pollTimer = window.setTimeout(loadOnce, 5000);
+            }
+            return;
+          }
+          await attachHls(normalizeStreamUrl(r.hls_url));
+        }
+      } catch (e) {
+        if (cancelled) return;
+        setState("error");
+        if (e instanceof ApiError) {
+          if (e.code === "not_enrolled") setMessage("You need to enroll to watch this lesson.");
+          else if (e.code === "course_preview_missing") setMessage("No preview video on this course yet.");
+          else if (e.code === "course_not_published") setMessage("Preview available after publishing.");
+          else if (e.code === "lesson_video_missing") setMessage("This lesson has no video yet.");
+          else setMessage(e.message);
+        } else {
+          setMessage("Couldn't load the video.");
+        }
+      }
+    }
+
+    loadOnce();
+
+    return () => {
+      cancelled = true;
+      if (pollTimer) window.clearTimeout(pollTimer);
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source.kind, source.kind === "lesson" ? source.lessonId : "", source.kind === "preview" ? source.slug : "", source.kind === "url" ? source.url : ""]);
+
+  function handlePlayClick() {
+    const video = videoRef.current;
+    if (!video) return;
+    setStarted(true);
+    video.play().catch(() => {});
+  }
+
+  return (
+    <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
+      <video
+        ref={videoRef}
+        controls={controls}
+        playsInline
+        poster={posterUrl}
+        className="h-full w-full bg-black"
+        onPlay={() => setStarted(true)}
+      />
+
+      {/* Loading / error overlay */}
+      {state !== "ready" && (
+        <div className="absolute inset-0 grid place-items-center bg-black/60 text-center text-white">
+          <div className="flex flex-col items-center gap-2">
+            {state === "error" ? (
+              <AlertCircle size={28} />
+            ) : (
+              <Loader2 size={28} className="animate-spin" />
+            )}
+            <p className="text-[13px]">{message ?? (state === "pending" ? "Processing…" : "Loading…")}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Big play button — shows over the poster until the user clicks play.
+          Makes it obvious this is a video, not a static image. */}
+      {state === "ready" && !started && (
+        <div
+          className="absolute inset-0 flex cursor-pointer items-center justify-center"
+          onClick={handlePlayClick}
+        >
+          <div className="grid h-16 w-16 place-items-center rounded-full bg-black/50 shadow-lg ring-2 ring-white/30 backdrop-blur-sm transition hover:scale-110 hover:bg-black/70">
+            <Play size={28} className="ml-1 text-white" fill="white" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

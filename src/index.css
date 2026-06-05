@@ -1,0 +1,37 @@
+/* Geist — satzone.dev's font, loaded from local node_modules */
+@import '@fontsource/geist/400.css';
+@import '@fontsource/geist/500.css';
+@import '@fontsource/geist/600.css';
+@import '@fontsource/geist/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Geist', 'Inter', system-ui, sans-serif;
+  background: #f8fafc;
+  color: #0f172b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Gradient for all primary-coloured elements (buttons, logo, active badges) */
+.bg-primary {
+  background: linear-gradient(135deg, #7c86ff 0%, #615fff 100%);
+}
+.hover\:bg-violet-600:hover {
+  background: linear-gradient(135deg, #615fff 0%, #4f39f6 100%);
+}
+
+/* Animation-delay utility classes (complement Tailwind's transition-delay set) */
+.animation-delay-150 { animation-delay: 150ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-500 { animation-delay: 500ms; }
+.animation-delay-\[3s\]  { animation-delay: 3s; }
+.animation-delay-\[6s\]  { animation-delay: 6s; }
